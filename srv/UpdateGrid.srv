@@ -1,0 +1,5 @@
+# request
+std_msgs/String[] grid
+---
+# response
+std_msgs/String[] altered_grid

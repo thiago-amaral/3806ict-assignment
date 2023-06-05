@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="default">
+    <include>
+      <uri>model://cafe_table</uri>
+      <pose>-10.0 7.0 0 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://bowl</uri>
+      <name>bowl</name>
+    </include>
+
+    <gui>
+      <camera name="user_camera">
+        <pose>0 0 20 0 -1.5707 0</pose> <!-- 10 units above origin, looking straight down -->
+        <view_controller>orbit</view_controller>
+      </camera>
+    </gui>
+  </world>
+</sdf>
+
