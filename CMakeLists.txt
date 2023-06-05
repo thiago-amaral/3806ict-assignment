@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(3806ict_assignment_3)
+project(assignment_3)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -56,11 +56,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  UpdateGrid.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -70,10 +69,12 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   gazebo_msgs#   geometry_msgs#   std_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  gazebo_msgs 
+  geometry_msgs   
+  std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -206,3 +207,7 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+add_executable(updateGrid src/updateGrid.cpp)
+target_link_libraries(updateGrid ${catkin_LIBRARIES})
+add_dependencies(updateGrid ${catkin_EXPORTED_TARGETS})

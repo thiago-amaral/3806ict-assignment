@@ -4,7 +4,7 @@
 #include <fstream>
 #include <map>
 #include "geometry_msgs/Point.h"
-#include "3806ict_assignment_3/UpdateGrid.h"
+#include "assignment_3/UpdateGrid.h"
 #include "gazebo_msgs/SpawnModel.h"
 #include "gazebo_msgs/DeleteModel.h"
 #include "gazebo_msgs/SetModelState.h"
@@ -18,27 +18,38 @@ geometry_msgs::Point coordinates[6][6];
 int numSurvivors = 0;
 int numObstacles = 0;
 bool submarineSpawned = false;
-// Dictionary with coordinates as key and survivor/obstacle as value
-std::map<geometry_msgs::Point, std::string> objectPositions;
 std::string homeDir = getenv("HOME");
 std::string modelDir = homeDir + "/.gazebo/models/";
+
+// comparison function for Point 
+struct ComparePoints {
+    bool operator()(const geometry_msgs::Point& p1, const geometry_msgs::Point& p2) const {
+        if (p1.x != p2.x) return p1.x < p2.x;
+        if (p1.y != p2.y) return p1.y < p2.y;
+        return p1.z < p2.z;
+    }
+};
+
+// Dictionary with coordinates as key and survivor/obstacle as value
+std::map<geometry_msgs::Point, std::string, ComparePoints> objectPositions;
 
 // function which takes a model type and returns a spawn model request
 gazebo_msgs::SpawnModel createSpawnRequest(std::string modelType, geometry_msgs::Point position) {
     gazebo_msgs::SpawnModel spawn;
-    if modelType == "S" {
+    std::string modelPath;
+    if (modelType == "S") {
         // Create a unique name
-        spawn.request.model_name = "bowl" + numSurvivors;
+        spawn.request.model_name = "bowl" + std::to_string(numSurvivors);
         numSurvivors++;
         // Provide SDF or URDF
-        std::string modelPath = modelDir + "bowl/model.sdf";
-    } else if modelType == "X" {
-        spawn.request.model_name = "cardboard_box" + numObstacles;
+        modelPath = modelDir + "bowl/model.sdf";
+    } else if (modelType == "X") {
+        spawn.request.model_name = "cardboard_box" + std::to_string(numObstacles);
         numObstacles++;
-        std::string modelPath = modelDir + "cardboard_box/model.sdf";
-    } else if modelType == "_"{
+        modelPath = modelDir + "cardboard_box/model.sdf";
+    } else if (modelType == "_") {
         spawn.request.model_name = "submarine";
-        std::string modelPath = modelDir + "submarine/model.sdf";
+        modelPath = modelDir + "submarine/model.sdf";
     } 
     std::ifstream t(modelPath);
     std::string modelXml((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
@@ -46,9 +57,10 @@ gazebo_msgs::SpawnModel createSpawnRequest(std::string modelType, geometry_msgs:
     spawn.request.initial_pose.position = position;
     return spawn;
 }
-bool updateGrid(3806ict_assignment_3::UpdateGrid::Request& req, 3806ict_assignment_3::UpdateGrid::Response& res) {
+
+bool updateGrid(assignment_3::UpdateGrid::Request& req, assignment_3::UpdateGrid::Response& res) {
     // Initialise new grid
-    std::vector<std_msgs::String> newGrid;
+    std::vector<std_msgs::String> newGrid = req.grid;
 
     for (int i = 0; i < 6; ++i) {
         for (int j = 0; j < 6; ++j) {
@@ -62,17 +74,18 @@ bool updateGrid(3806ict_assignment_3::UpdateGrid::Request& req, 3806ict_assignme
 
                 if (lastChar == 'O' && newChar == 'S') {
                     // Spawn a "bowl"
-                    spawn = createSpawnRequest('S', point);
+                    spawn = createSpawnRequest("S", point);
                     objectPositions[point] = spawn.request.model_name;
                     spawnClient.call(spawn);
                 } else if (lastChar == 'S' && newChar == 'O') {
                     // Delete the "bowl"
                     gazebo_msgs::DeleteModel del;
-                    deleteClient.call(objectPositions[point]);
+                    del.request.model_name = objectPositions[point];
+                    deleteClient.call(del);
                     objectPositions.erase(point);
                 } else if (lastChar == 'O' && newChar == 'X') {
                     // Spawn a "Box"
-                    spawn = createSpawnRequest('X', point);
+                    spawn = createSpawnRequest("X", point);
                     objectPositions[point] = spawn.request.model_name;
                     spawnClient.call(spawn);
                 } else if (lastChar == 'O' && newChar == '_') {
@@ -84,7 +97,7 @@ bool updateGrid(3806ict_assignment_3::UpdateGrid::Request& req, 3806ict_assignme
                         setClient.call(set);
                     } else {
                         // Spawn the submarine
-                        spawn = createSpawnRequest('_', point);
+                        spawn = createSpawnRequest("_", point);
                         objectPositions[point] = spawn.request.model_name;
                         spawnClient.call(spawn);
                         submarineSpawned = true;
@@ -95,6 +108,8 @@ bool updateGrid(3806ict_assignment_3::UpdateGrid::Request& req, 3806ict_assignme
     }
     // Update the lastGrid
     lastGrid = newGrid;
+    // Return the updated grid
+    res.altered_grid = newGrid;
     return true;
 }
 
