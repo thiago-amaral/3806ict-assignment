@@ -9,6 +9,8 @@ int SUB = 1;
 int HOSTILE = 2;
 int SURVIVOR = 3;
 
+
+
 class World{
 public:
     int world_width;
@@ -112,6 +114,19 @@ public:
             std::cout << std::endl;
         }
 
+    }
+
+    void send_world(){
+        std_msgs::String row;
+        row.data = "OOSOOS";
+
+        for(int i = 0; i < 6; i ++){
+            srv.request.grid.push_back(row);
+        }
+
+        if (!client.call(srv)) {
+            return EXIT_FAILURE;
+        }
     }
 
 };

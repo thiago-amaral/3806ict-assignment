@@ -1,10 +1,23 @@
 <?xml version="1.0" ?>
 <sdf version="1.6">
   <world name="default">
+
+    <scene>
+      <ambient>0.4 0.4 0.4 1</ambient>
+      <background>0.7 0.7 0.7 1</background>
+      <shadows>true</shadows>
+    </scene>
+
+    <!-- A global light source -->
     <include>
-      <uri>model://cafe_table</uri>
-      <pose>-10.0 7.0 0 0 0 0</pose>
+      <uri>model://sun</uri>
     </include>
+
+    <!-- A ground plane  -->
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+   
 
     <include>
       <uri>model://bowl</uri>
@@ -13,10 +26,12 @@
 
     <gui>
       <camera name="user_camera">
-        <pose>0 0 20 0 -1.5707 0</pose> <!-- 10 units above origin, looking straight down -->
+        <pose>0 0 20 0 1.5707 0</pose> <!-- 10 units above origin, looking straight down -->
         <view_controller>orbit</view_controller>
       </camera>
     </gui>
+    
+
   </world>
 </sdf>
 

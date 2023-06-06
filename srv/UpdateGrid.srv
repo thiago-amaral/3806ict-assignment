@@ -1,5 +1,3 @@
-# request
-std_msgs/String[] grid
+std_msgs/Int32MultiArray grid
 ---
-# response
-std_msgs/String[] altered_grid
+std_msgs/Int32MultiArray altered_grid

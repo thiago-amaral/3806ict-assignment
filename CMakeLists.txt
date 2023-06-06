@@ -49,11 +49,12 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
+#add_message_files(
+#  FILES
 #   Message1.msg
 #   Message2.msg
-# )
+
+#)
 
 ## Generate services in the 'srv' folder
 add_service_files(
@@ -211,3 +212,8 @@ include_directories(
 add_executable(updateGrid src/updateGrid.cpp)
 target_link_libraries(updateGrid ${catkin_LIBRARIES})
 add_dependencies(updateGrid ${catkin_EXPORTED_TARGETS})
+
+add_executable(testing src/test.cpp)
+target_link_libraries(testing ${catkin_LIBRARIES})
+add_dependencies(testing ${catkin_EXPORTED_TARGETS})
+
