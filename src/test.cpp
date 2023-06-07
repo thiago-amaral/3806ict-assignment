@@ -14,50 +14,60 @@
 #define SURVIVOR 2
 #define HOSTILE 3
 
-void generate_world(int (&world)[H][W], int num_survivors, int num_hostiles){
-    // init world with EMPTYs
-    for (int i = 0; i < H; ++i) {
-        for (int j = 0; j < W; ++j) {
+void generate_world(int (&world)[H][W], int num_survivors, int num_hostiles)
+{
+    // init world with EMPTY
+    for (int i = 0; i < H; ++i)
+    {
+        for (int j = 0; j < W; ++j)
+        {
             world[i][j] = EMPTY;
         }
     }
 
-    // place sub
+    // place sub in top right corner (origin)
     world[0][0] = SUB;
 
-    // place survivors
+    // place survivors randomly
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<int> rowDist(0, H - 1);
     std::uniform_int_distribution<int> colDist(0, W - 1);
 
     int placed = 0;
-    while(placed < num_survivors){
+    while (placed < num_survivors)
+    {
         int rand_row = rowDist(gen);
         int rand_col = colDist(gen);
-        if(world[rand_row][rand_col] == EMPTY){
+        if (world[rand_row][rand_col] == EMPTY)
+        {
             world[rand_row][rand_col] = SURVIVOR;
             placed++;
         }
     }
 
-    // place hostiles
+    // place hostiles randomly
     placed = 0;
-    while(placed < num_hostiles){
+    while (placed < num_hostiles)
+    {
         int rand_row = rowDist(gen);
         int rand_col = colDist(gen);
-        if(world[rand_row][rand_col] == EMPTY){
+        if (world[rand_row][rand_col] == EMPTY)
+        {
             world[rand_row][rand_col] = HOSTILE;
             placed++;
         }
     }
 }
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[])
+{
+    // init ros
     ros::init(argc, argv, "testing");
     ros::NodeHandle n;
 
-    ros::ServiceClient client= n.serviceClient<assignment_3::UpdateGrid>("/update_grid");
+    // create client
+    ros::ServiceClient client = n.serviceClient<assignment_3::UpdateGrid>("/update_grid");
     assignment_3::UpdateGrid srv;
 
     std_msgs::Int32MultiArray temp_grid;
@@ -66,7 +76,7 @@ int main(int argc, char *argv[]){
     generate_world(array, 3, 3);
 
     // int array[H][W] = {
-    //     {0, 0, 0, 0, 0, 0},
+    //     {1, 2, 3, 0, 0, 0},
     //     {0, 0, 0, 0, 0, 0},
     //     {0, 0, 0, 0, 2, 0},
     //     {0, 0, 0, 0, 0, 0},
@@ -74,20 +84,22 @@ int main(int argc, char *argv[]){
     //     {0, 2, 0, 0, 0, 0},
     // };
 
+    // transfer the data from int array to std_msgs::Int32MultiArray to be sent via service
+    // not real sure what to comment here apart from this, Jimbo did you have more to add?
     temp_grid.layout.dim.push_back(std_msgs::MultiArrayDimension());
     temp_grid.layout.dim.push_back(std_msgs::MultiArrayDimension());
     temp_grid.layout.dim[0].label = "height";
     temp_grid.layout.dim[1].label = "width";
     temp_grid.layout.dim[0].size = H;
     temp_grid.layout.dim[1].size = W;
-    temp_grid.layout.dim[0].stride = H*W;
+    temp_grid.layout.dim[0].stride = H * W;
     temp_grid.layout.dim[1].stride = W;
     temp_grid.layout.data_offset = 0;
-    std::vector<int> vec(W*H, 0);
-    for(int i=0; i<H; i++)
-        for(int j=0; j<W; j++)
-            vec[i*W + j] = array[i][j];
-    temp_grid.data = vec;    
+    std::vector<int> vec(W * H, 0);
+    for (int i = 0; i < H; i++)
+        for (int j = 0; j < W; j++)
+            vec[i * W + j] = array[i][j];
+    temp_grid.data = vec;
     srv.request.grid = temp_grid;
 
     // std_msgs::String row;
@@ -97,7 +109,8 @@ int main(int argc, char *argv[]){
     //     srv.request.grid.push_back(row);
     // }
 
-    if (!client.call(srv)) {
+    if (!client.call(srv))
+    {
         return EXIT_FAILURE;
     }
 
