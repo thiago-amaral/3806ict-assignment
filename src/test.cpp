@@ -1,6 +1,5 @@
 #include <ros/ros.h>
 #include "assignment_3/UpdateGrid.h"
-#include "assignment_3/array1D.h"
 #include <std_msgs/String.h>
 #include <std_msgs/Int32.h>
 #include <std_msgs/Int32MultiArray.h>
