@@ -1,8 +1,13 @@
 int32 newSubXIndex
 int32 newSubYIndex
+int32 sensorRange
 ---
 bool bombNorth
 bool bombSouth
 bool bombEast
 bool bombWest
 bool survivorDetected
+int32[] northRadar
+int32[] southRadar
+int32[] eastRadar
+int32[] westRadar

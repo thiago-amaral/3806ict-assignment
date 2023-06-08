@@ -157,30 +157,42 @@ bool sensorReadings(assignment_3::BombSensor::Request &req, assignment_3::BombSe
     res.survivorDetected = false;
     int x = req.newSubXIndex;
     int y = req.newSubYIndex;
+    int range = req.sensorRange;
+    
+    // Initialize radar arrays
+    res.northRadar = std::vector<int32>(range, 0);
+    res.southRadar = std::vector<int32>(range, 0);
+    res.eastRadar = std::vector<int32>(range, 0);
+    res.westRadar = std::vector<int32>(range, 0);
 
     // Check if survivor detected
     if (currentGrid[x][y] == SURVIVOR)
     {
         res.survivorDetected = true;
     }
-    // Check if there are bombs detected
-    if (currentGrid[x][y-1] == HOSTILE)
-    {
-        res.bombNorth = true;
+    
+    // Check if there are bombs detected within the sensor range
+    for(int i = 1; i <= range; ++i) {
+        if (y-i >= 0 && currentGrid[x][y-i] == HOSTILE) { // North
+            res.bombNorth = true;
+            res.northRadar[i-1] = 1;
+        }
+        if (y+i < board_size && currentGrid[x][y+i] == HOSTILE) { // South
+            res.bombSouth = true;
+            res.southRadar[i-1] = 1;
+        }
+        if (x-i >= 0 && currentGrid[x-i][y] == HOSTILE) { // West
+            res.bombWest = true;
+            res.westRadar[i-1] = 1;
+        }
+        if (x+i < board_size && currentGrid[x+i][y] == HOSTILE) { // East
+            res.bombEast = true;
+            res.eastRadar[i-1] = 1;
+        }
     }
-    if (currentGrid[x][y+1] == HOSTILE)
-    {
-        res.bombSouth = true;
-    }
-    if (currentGrid[x-1][y] == HOSTILE)
-    {
-        res.bombWest = true;
-    }
-    if (currentGrid[x+1][y] == HOSTILE)
-    {
-        res.bombEast = true;
-    }
+    return true;
 }
+
 
 int main(int argc, char **argv)
 {
