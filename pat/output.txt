@@ -3,7 +3,7 @@ Assertion: Move() reaches goalAreaChecked
 ********Verification Result********
 The Assertion (Move() reaches goalAreaChecked) is VALID.
 The following trace leads to a state where the condition is satisfied.
-<init -> moveDown -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveLeft -> moveLeft -> moveLeft -> moveUp -> moveRight -> moveLeft -> moveDown -> moveLeft -> moveLeft -> moveUp -> moveUp -> moveRight -> moveUp -> moveRight -> moveRight -> moveRight -> moveDown -> moveRight -> moveDown>
+<init -> moveUp -> moveLeft -> moveLeft -> moveRight -> moveRight -> moveUp -> moveUp -> moveLeft -> moveLeft -> moveRight -> moveRight -> moveDown -> moveDown -> moveLeft -> moveLeft -> moveLeft -> moveRight -> moveRight -> moveRight -> moveUp -> moveUp -> moveLeft -> moveLeft -> moveLeft -> moveRight -> moveRight -> moveRight -> moveDown -> moveDown -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveRight -> moveRight -> moveRight -> moveRight -> moveUp -> moveUp -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveRight -> moveRight -> moveRight -> moveRight -> moveDown -> moveDown -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveUp -> moveUp -> moveLeft -> moveLeft -> moveLeft -> moveUp -> moveRight -> moveRight -> moveRight -> moveDown -> moveDown -> moveLeft -> moveLeft -> moveRight -> moveRight -> moveUp -> moveUp -> moveLeft -> moveLeft -> moveLeft -> moveDown -> moveLeft -> moveDown -> moveRight -> moveRight -> moveDown -> moveDown -> moveLeft -> moveRight -> moveUp -> moveRight -> moveRight -> moveUp -> moveUp -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveDown -> moveLeft -> moveRight -> moveRight -> moveRight -> moveDown -> moveDown -> moveLeft -> moveLeft -> moveLeft>
 
 ********Verification Setting********
 Admissible Behavior: All
@@ -12,9 +12,9 @@ System Abstraction: False
 
 
 ********Verification Statistics********
-Visited States:72
-Total Transitions:148
-Time Used:0.0099431s
-Estimated Memory Used:8517.84KB
+Visited States:298
+Total Transitions:569
+Time Used:0.0197826s
+Estimated Memory Used:8843.576KB
 
 

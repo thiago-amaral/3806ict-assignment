@@ -129,7 +129,7 @@ void update_directions(std::queue<std::string> &q)
 			}
 			// removing '>' from last move
 			std::string &last_move = q.back();
-			last_move[last_move.size() - 1] = '\0';
+			last_move.pop_back();
 			break;
 		}
 	}
@@ -318,7 +318,7 @@ int main(int argc, char *argv[])
 	update_directions(q);
 	std::string next_move;
 	sensor_srv.request.sensorRange = 1;
-	ros::Rate rate(0.5);
+	ros::Rate rate(2);
 
 	while (true)
 	{
@@ -327,6 +327,12 @@ int main(int argc, char *argv[])
 		if (q.empty())
 		{
 			std::cerr << "no moves to take from!" << std::endl;
+			for (int i = 0; i < H; i++)
+			{
+				for (int j = 0; j < W; j++)
+					std::cout << current_world[i][j] << " ";
+				std::cout << std::endl;
+			}
 			return EXIT_FAILURE;
 		}
 		next_move = std::string(q.front());
@@ -377,8 +383,6 @@ int main(int argc, char *argv[])
 		if (sensor_srv.response.survivorDetected)
 		{
 			ROS_INFO("survior detected!!");
-			// delete survivor??
-			true_world[sub_x][sub_y] = EMPTY;
 			// return EXIT_FAILURE;
 		}
 		// translate world to vector for multiarray

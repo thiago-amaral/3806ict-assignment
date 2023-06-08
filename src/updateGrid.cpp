@@ -13,6 +13,7 @@
 #include "assignment_3/Sensors.h"
 
 #define board_size 6
+#define VISITED -1
 #define EMPTY 0
 #define SUB 1
 #define HOSTILE 2
@@ -110,7 +111,7 @@ bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid
 					del.request.model_name = objectPositions[point];
 					deleteClient.call(del);
 					objectPositions.erase(point);
-					// Move the "Sub"					
+					// Move the "Sub"
 					set.request.model_state.model_name = "submarine";
 					set.request.model_state.pose.position = point;
 					setClient.call(set);
@@ -122,11 +123,12 @@ bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid
 					objectPositions[point] = spawn.request.model_name;
 					spawnClient.call(spawn);
 				}
-				if (oldIndex == EMPTY && newIndex == SUB)
+				if ((oldIndex == EMPTY || oldIndex == VISITED) && newIndex == SUB)
 				{
 					if (submarineSpawned)
 					{
 						// Move the "Sub"
+						ROS_INFO("Moving sub to pos: (%.0f, %.0f)", point.x, point.y);
 						set.request.model_state.model_name = "submarine";
 						set.request.model_state.pose.position = point;
 						setClient.call(set);
