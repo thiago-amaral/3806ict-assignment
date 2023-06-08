@@ -10,6 +10,7 @@
 #include "gazebo_msgs/SpawnModel.h"
 #include "gazebo_msgs/DeleteModel.h"
 #include "gazebo_msgs/SetModelState.h"
+#include "assignment_3/BombSensor.h"
 
 #define board_size 6
 #define EMPTY 0
@@ -146,6 +147,41 @@ bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid
     return true;
 }
 
+bool sensorReadings(assignment_3::BombSensor::Request &req, assignment_3::BombSensor::Response &res)
+{
+    // set all to false
+    res.bombNorth = false;
+    res.bombSouth = false;
+    res.bombWest = false;
+    res.bombEast = false;
+    res.survivorDetected = false;
+    int x = req.newSubXIndex;
+    int y = req.newSubYIndex;
+
+    // Check if survivor detected
+    if (currentGrid[x][y] == SURVIVOR)
+    {
+        res.survivorDetected = true;
+    }
+    // Check if there are bombs detected
+    if (currentGrid[x][y-1] == HOSTILE)
+    {
+        res.bombNorth = true;
+    }
+    if (currentGrid[x][y+1] == HOSTILE)
+    {
+        res.bombSouth = true;
+    }
+    if (currentGrid[x-1][y] == HOSTILE)
+    {
+        res.bombWest = true;
+    }
+    if (currentGrid[x+1][y] == HOSTILE)
+    {
+        res.bombEast = true;
+    }
+}
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "gazebo_object_manager");
@@ -174,7 +210,8 @@ int main(int argc, char **argv)
     setClient = n.serviceClient<gazebo_msgs::SetModelState>("gazebo/set_model_state");
     spawnClient = n.serviceClient<gazebo_msgs::SpawnModel>("gazebo/spawn_sdf_model");
     deleteClient = n.serviceClient<gazebo_msgs::DeleteModel>("gazebo/delete_model");
-    ros::ServiceServer service = n.advertiseService("update_grid", updateGrid);
+    ros::ServiceServer SensorService = n.advertiseService("SensorReadings", sensorReadings);
+    ros::ServiceServer updateGridService = n.advertiseService("update_grid", updateGrid);
     ros::spin();
     return 0;
 }

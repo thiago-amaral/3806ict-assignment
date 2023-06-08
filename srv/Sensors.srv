@@ -1,0 +1,8 @@
+int32 newSubXIndex
+int32 newSubYIndex
+---
+bool bombNorth
+bool bombSouth
+bool bombEast
+bool bombWest
+bool survivorDetected
