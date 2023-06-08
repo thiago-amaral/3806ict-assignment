@@ -311,6 +311,8 @@ int main(int argc, char *argv[])
 	// generate world.csp
 	generate_known_world(current_world, sub_x, sub_y);
 
+	return EXIT_SUCCESS;
+
 	// get output from pat
 	std::system(PAT_CMD.c_str());
 
@@ -326,14 +328,18 @@ int main(int argc, char *argv[])
 		// get next direction
 		if (q.empty())
 		{
-			std::cerr << "no moves to take from!" << std::endl;
+			ROS_INFO("Successfully visited all positions within search area!\nFinal internal representation of environment:");
 			for (int i = 0; i < H; i++)
 			{
 				for (int j = 0; j < W; j++)
+				{
+					if (current_world[i][j] != VISITED)
+						std::cout << " ";
 					std::cout << current_world[i][j] << " ";
+				}
 				std::cout << std::endl;
 			}
-			return EXIT_FAILURE;
+			return EXIT_SUCCESS;
 		}
 		next_move = std::string(q.front());
 		// remove direction from queue
