@@ -57,6 +57,16 @@ void update_world(assignment_3::Sensors &srv, int (&curr_world)[H][W])
 				curr_world[srv.request.newSubXIndex + 1 + i][srv.request.newSubYIndex] = HOSTILE;
 }
 
+void update_true_world(int old_x, int old_y, std::pair<int, int> new_coords, int (&true_world)[H][W])
+{
+	int new_x = new_coords.first;
+	int new_y = new_coords.second;
+	// update old position
+	true_world[old_x][old_y] = VISITED;
+	// update new position
+	true_world[new_x][new_y] = SUB;
+}
+
 std::pair<int, int> update_position(std::string &move, int &x, int &y)
 {
 	if (move == "moveRight")
@@ -211,6 +221,15 @@ void generate_known_world(int (&world)[H][W], int &sub_x, int &sub_y)
 	// std::cout << "Known environment created.\n" << std::endl;
 }
 
+std::vector<int> translate_world(int (&true_world)[H][W])
+{
+	std::vector<int> vec(W * H, 0);
+	for (int i = 0; i < H; i++)
+		for (int j = 0; j < W; j++)
+			vec[i * W + j] = true_world[i][j];
+	return vec;
+}
+
 int main(int argc, char *argv[])
 {
 	// init ros
@@ -324,6 +343,8 @@ int main(int argc, char *argv[])
 		}
 
 		update_world(sensor_srv, current_world);
+		update_true_world(sub_x, sub_y, new_coords, true_world);
+		
 		sub_x = new_x;
 		sub_y = new_y;
 
@@ -332,6 +353,14 @@ int main(int argc, char *argv[])
 			//
 			ROS_INFO("survior detected!!");
 			return EXIT_FAILURE;
+		}
+		// translate world to vector for multiarray
+		temp_grid.data = translate_world(true_world);
+		srv.request.grid = temp_grid;
+		// call update_grid service
+		if (!client.call(srv))
+		{
+			ROS_ERROR("Failed to call service updateGrid");
 		}
 	}
 
