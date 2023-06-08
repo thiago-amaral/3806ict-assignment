@@ -102,13 +102,18 @@ bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid
 					objectPositions[point] = spawn.request.model_name;
 					spawnClient.call(spawn);
 				}
-				if (oldIndex == SURVIVOR && newIndex == EMPTY)
+				if (oldIndex == SURVIVOR && newIndex == SUB)
 				{
 					// Delete the "Survivor"
 					gazebo_msgs::DeleteModel del;
 					del.request.model_name = objectPositions[point];
 					deleteClient.call(del);
 					objectPositions.erase(point);
+					// Move the submarine
+					gazebo_msgs::SetModelState set;
+					set.request.model_state.model_name = "submarine";
+					set.request.model_state.pose.position = point;
+					setClient.call(set);
 				}
 				if (oldIndex == EMPTY && newIndex == HOSTILE)
 				{
