@@ -83,6 +83,9 @@ bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid
 {
 	// Initialise new grid
 	std_msgs::Int32MultiArray read_grid = req.grid;
+	gazebo_msgs::SetModelState set;
+	gazebo_msgs::DeleteModel del;
+	gazebo_msgs::SpawnModel spawn;
 	for (int i = 0; i < board_size; ++i)
 	{
 		for (int j = 0; j < board_size; ++j)
@@ -93,7 +96,6 @@ bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid
 			{
 				// Get the corresponding coordinates
 				geometry_msgs::Point point = coordinates[i][j];
-				gazebo_msgs::SpawnModel spawn;
 
 				if (oldIndex == EMPTY && newIndex == SURVIVOR)
 				{
@@ -105,12 +107,10 @@ bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid
 				if (oldIndex == SURVIVOR && newIndex == SUB)
 				{
 					// Delete the "Survivor"
-					gazebo_msgs::DeleteModel del;
 					del.request.model_name = objectPositions[point];
 					deleteClient.call(del);
 					objectPositions.erase(point);
-					// Move the submarine
-					gazebo_msgs::SetModelState set;
+					// Move the "Sub"					
 					set.request.model_state.model_name = "submarine";
 					set.request.model_state.pose.position = point;
 					setClient.call(set);
@@ -126,15 +126,14 @@ bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid
 				{
 					if (submarineSpawned)
 					{
-						// Move the submarine
-						gazebo_msgs::SetModelState set;
+						// Move the "Sub"
 						set.request.model_state.model_name = "submarine";
 						set.request.model_state.pose.position = point;
 						setClient.call(set);
 					}
 					else
 					{
-						// Spawn the submarine
+						// Spawn the "Sub"
 						spawn = createSpawnRequest(SUB, point);
 						objectPositions[point] = spawn.request.model_name;
 						spawnClient.call(spawn);
