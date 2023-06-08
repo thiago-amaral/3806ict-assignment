@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include "assignment_3/UpdateGrid.h"
+#include "assignment_3/sensorReadings.h"
 #include <std_msgs/String.h>
 #include <std_msgs/Int32.h>
 #include <std_msgs/Int32MultiArray.h>
@@ -13,6 +14,8 @@
 #define SUB 1
 #define SURVIVOR 2
 #define HOSTILE 3
+
+ros::ServiceClient sensorClient;
 
 void generate_world(int (&world)[H][W], int num_survivors, int num_hostiles)
 {
@@ -58,6 +61,83 @@ void generate_world(int (&world)[H][W], int num_survivors, int num_hostiles)
             placed++;
         }
     }
+}
+
+void generate_known_world(std::string filename, int current_row, int current_col, int move_row, int move_col,
+                          std::vector<std::vector<int>> &old_world)
+{
+    std::vector<std::vector<int>> new_world = old_world;
+    // update current position of sub
+    int new_col = current_col + move_col;
+    int new_row = current_row + move_row;
+    new_world[new_row][new_col] = VISITED;
+
+    // need sensor data somehow
+    assignment_3::sensorReadings srv;
+    // supply srv.req with x and y coordinates of new sub location and sensor length
+
+    // calll sensor service
+    if (!sensorClient.call(srv))
+    {
+        ROS_ERROR("Failed to call service sensorReadings");
+    }
+
+    // call sensorReadings and save data
+    bool bombNorth;
+    bool bombSouth;
+    bool bombEast;
+    bool bombWest;
+    bool survivorDetected;
+    bool survivorsCollected;
+
+    // update array with new data eg:
+    // new_world[row][col] = BOMB
+
+    //
+    std::ofstream file(filename);
+    if (!file)
+    {
+        std::cerr << "Failed to open the file: " << filename << std::endl;
+        return;
+    }
+    // write defines
+    file << "#define Visited -1;\n";
+    file << "#define Unvisited 0;\n";
+    file << "#define Sub 1;\n";
+    file << "#define Bomb 2;\n";
+    file << "#define Survivor 3;\n\n";
+    file << "#define Rows " << H << ";\n";
+    file << "#define Cols " << W << ";\n";
+    file << "#define Fuel " << H * W << ";\n";
+
+    // write new array representation of world
+    file << "\nvar world[Rows][Cols]:{Visited..Survivor} = [\n";
+    for (int i = 0; i < H; i++)
+    {
+        for (int j = 0; j < W; j++)
+        {
+            if (i == H - 1 && j == W - 1)
+            {
+                file << new_world[i][j];
+            }
+            else
+            {
+                file << new_world[i][j] << ", ";
+            }
+        }
+        file << "\n";
+    }
+    file << "];\n\n";
+
+    file << "// Position of sub\n";
+    file << "var xpos:{0..Rows} = " << new_col << ";\n";
+    file << "var xpos:{0..Cols} = " << new_row << ";\n";
+    file << "// Survivors onboard\n";
+    file << "var survivors_onboard:{0..99} = " << survivorsCollected << ";\n";
+    file << "var xpos:{0..Cols} = " << new_row << ";\n";
+
+    file.close();
+    // std::cout << "Known environment created.\n" << std::endl;
 }
 
 int main(int argc, char *argv[])
