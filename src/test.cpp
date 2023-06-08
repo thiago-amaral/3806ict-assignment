@@ -16,8 +16,8 @@
 #define W 6
 #define EMPTY 0
 #define SUB 1
-#define SURVIVOR 2
-#define HOSTILE 3
+#define HOSTILE 2
+#define SURVIVOR 3
 #define SUB_START_X 0
 #define SUB_START_Y 0
 
@@ -85,7 +85,7 @@ std::pair<int, int> update_position(std::string &move, int &x, int &y)
 	{ // moving down is row + 1
 		return {x + 1, y};
 	}
-	std::cerr << "update_position found invalid move" << std::endl;
+	std::cerr << "update_position found invalid move: " << move << std::endl;
 	return {x, y};
 }
 
@@ -306,9 +306,11 @@ int main(int argc, char *argv[])
 	update_directions(q);
 	std::string next_move;
 	sensor_srv.request.sensorRange = 1;
+	ros::Rate rate(0.5);
 
 	while (true)
 	{
+		ROS_INFO("-- Start of cycle --");
 		// get next direction
 		if (q.empty())
 		{
@@ -318,6 +320,7 @@ int main(int argc, char *argv[])
 		next_move = std::string(q.front());
 		// remove direction from queue
 		q.pop();
+		ROS_INFO("Next move is: %s", next_move.c_str());
 
 		// generate new coordinates from move
 		std::pair<int, int> new_coords = update_position(next_move, sub_x, sub_y);
@@ -327,6 +330,7 @@ int main(int argc, char *argv[])
 		// check if we can go to next position
 		if (current_world[new_x][new_y] == HOSTILE)
 		{
+			ROS_INFO("About to move into hostile, recalculating PAT directions");
 			// regenerate pat directions
 			generate_known_world(current_world, sub_x, sub_y);
 			std::system(PAT_CMD.c_str());
@@ -334,25 +338,34 @@ int main(int argc, char *argv[])
 			continue;
 		}
 
+		// new position won't be intersecting a hostile, so we can move
 		sensor_srv.request.newSubXIndex = new_x;
 		sensor_srv.request.newSubYIndex = new_y;
 
+		// call the sensor client
 		if (!sensorClient.call(sensor_srv))
 		{
 			ROS_ERROR("Failed to call service sensorReadings");
+			return EXIT_FAILURE;
 		}
 
+		// update our current world with the new bot position
+		// update our current world with any detected hostiles
 		update_world(sensor_srv, current_world);
+
+		// update the true world with the new bot position
+		// update the previous position as 'visited'
 		update_true_world(sub_x, sub_y, new_coords, true_world);
-		
+
+		// update bot's understanding of its position
 		sub_x = new_x;
 		sub_y = new_y;
 
+		// let us know that we detected a survivor
 		if (sensor_srv.response.survivorDetected)
 		{
-			//
 			ROS_INFO("survior detected!!");
-			return EXIT_FAILURE;
+			// return EXIT_FAILURE;
 		}
 		// translate world to vector for multiarray
 		temp_grid.data = translate_world(true_world);
@@ -362,6 +375,9 @@ int main(int argc, char *argv[])
 		{
 			ROS_ERROR("Failed to call service updateGrid");
 		}
+		ROS_INFO("-- End of cycle --\n");
+
+		rate.sleep();
 	}
 
 	/*

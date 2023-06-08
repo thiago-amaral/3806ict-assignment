@@ -174,22 +174,22 @@ bool sensorReadings(assignment_3::Sensors::Request &req, assignment_3::Sensors::
 	// Check if there are bombs detected within the sensor range
 	for (int i = 1; i <= range; ++i)
 	{
-		if (y - i >= 0 && currentGrid[x][y - i] == HOSTILE)
+		if (x - i >= 0 && currentGrid[x][y - i] == HOSTILE)
 		{ // North
 			res.bombNorth = true;
 			res.northRadar[i - 1] = 1;
 		}
-		if (y + i < board_size && currentGrid[x][y + i] == HOSTILE)
+		if (x + i < board_size && currentGrid[x][y + i] == HOSTILE)
 		{ // South
 			res.bombSouth = true;
 			res.southRadar[i - 1] = 1;
 		}
-		if (x - i >= 0 && currentGrid[x - i][y] == HOSTILE)
+		if (y - i >= 0 && currentGrid[x - i][y] == HOSTILE)
 		{ // West
 			res.bombWest = true;
 			res.westRadar[i - 1] = 1;
 		}
-		if (x + i < board_size && currentGrid[x + i][y] == HOSTILE)
+		if (y + i < board_size && currentGrid[x + i][y] == HOSTILE)
 		{ // East
 			res.bombEast = true;
 			res.eastRadar[i - 1] = 1;
