@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
             vec[i * W + j] = array[i][j];
     temp_grid.data = vec;
     srv.request.grid = temp_grid;
-
+    
     // std_msgs::String row;
     // row.data = "OOSOOS";
 
