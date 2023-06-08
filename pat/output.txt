@@ -3,7 +3,7 @@ Assertion: Move() reaches goalAreaChecked
 ********Verification Result********
 The Assertion (Move() reaches goalAreaChecked) is VALID.
 The following trace leads to a state where the condition is satisfied.
-<init -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveDown -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveDown -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveDown -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveDown -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveDown -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight>
+<init -> moveDown -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveLeft -> moveLeft -> moveLeft -> moveUp -> moveRight -> moveLeft -> moveDown -> moveLeft -> moveLeft -> moveUp -> moveUp -> moveRight -> moveUp -> moveRight -> moveRight -> moveRight -> moveDown -> moveRight -> moveDown>
 
 ********Verification Setting********
 Admissible Behavior: All
@@ -12,9 +12,9 @@ System Abstraction: False
 
 
 ********Verification Statistics********
-Visited States:184
-Total Transitions:208
-Time Used:0.0092845s
-Estimated Memory Used:8530.16KB
+Visited States:72
+Total Transitions:148
+Time Used:0.0099431s
+Estimated Memory Used:8517.84KB
 
 

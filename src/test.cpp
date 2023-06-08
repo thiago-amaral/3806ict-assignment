@@ -39,22 +39,34 @@ void update_world(assignment_3::Sensors &srv, int (&curr_world)[H][W])
 	if (srv.response.bombEast)
 		for (int i = 0; i < srv.request.sensorRange; i++)
 			if (srv.response.eastRadar[i])
+			{
 				curr_world[srv.request.newSubXIndex][srv.request.newSubYIndex + 1 + i] = HOSTILE;
+				ROS_INFO("Bomb detected east!");
+			}
 	// west is col - 1
 	if (srv.response.bombWest)
 		for (int i = 0; i < srv.request.sensorRange; i++)
 			if (srv.response.westRadar[i])
+			{
 				curr_world[srv.request.newSubXIndex][srv.request.newSubYIndex - 1 - i] = HOSTILE;
+				ROS_INFO("Bomb detected west!");
+			}
 	// north is row - 1
 	if (srv.response.bombNorth)
 		for (int i = 0; i < srv.request.sensorRange; i++)
 			if (srv.response.northRadar[i])
+			{
 				curr_world[srv.request.newSubXIndex - 1 - i][srv.request.newSubYIndex] = HOSTILE;
+				ROS_INFO("Bomb detected north!");
+			}
 	// south is row + 1
 	if (srv.response.bombSouth)
 		for (int i = 0; i < srv.request.sensorRange; i++)
 			if (srv.response.southRadar[i])
+			{
 				curr_world[srv.request.newSubXIndex + 1 + i][srv.request.newSubYIndex] = HOSTILE;
+				ROS_INFO("Bomb detected south!");
+			}
 }
 
 void update_true_world(int old_x, int old_y, std::pair<int, int> new_coords, int (&true_world)[H][W])
@@ -365,6 +377,8 @@ int main(int argc, char *argv[])
 		if (sensor_srv.response.survivorDetected)
 		{
 			ROS_INFO("survior detected!!");
+			// delete survivor??
+			true_world[sub_x][sub_y] = EMPTY;
 			// return EXIT_FAILURE;
 		}
 		// translate world to vector for multiarray

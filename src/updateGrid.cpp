@@ -15,8 +15,8 @@
 #define board_size 6
 #define EMPTY 0
 #define SUB 1
-#define SURVIVOR 2
-#define HOSTILE 3
+#define HOSTILE 2
+#define SURVIVOR 3
 
 int currentGrid[board_size][board_size];
 geometry_msgs::Point coordinates[board_size][board_size];
@@ -102,7 +102,7 @@ bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid
 					objectPositions[point] = spawn.request.model_name;
 					spawnClient.call(spawn);
 				}
-				else if (oldIndex == SURVIVOR && newIndex == EMPTY)
+				if (oldIndex == SURVIVOR && newIndex == EMPTY)
 				{
 					// Delete the "Survivor"
 					gazebo_msgs::DeleteModel del;
@@ -110,14 +110,14 @@ bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid
 					deleteClient.call(del);
 					objectPositions.erase(point);
 				}
-				else if (oldIndex == EMPTY && newIndex == HOSTILE)
+				if (oldIndex == EMPTY && newIndex == HOSTILE)
 				{
 					// Spawn a "Hostile"
 					spawn = createSpawnRequest(HOSTILE, point);
 					objectPositions[point] = spawn.request.model_name;
 					spawnClient.call(spawn);
 				}
-				else if (oldIndex == EMPTY && newIndex == SUB)
+				if (oldIndex == EMPTY && newIndex == SUB)
 				{
 					if (submarineSpawned)
 					{
@@ -174,22 +174,22 @@ bool sensorReadings(assignment_3::Sensors::Request &req, assignment_3::Sensors::
 	// Check if there are bombs detected within the sensor range
 	for (int i = 1; i <= range; ++i)
 	{
-		if (x - i >= 0 && currentGrid[x][y - i] == HOSTILE)
+		if (x - i >= 0 && currentGrid[x - i][y] == HOSTILE)
 		{ // North
 			res.bombNorth = true;
 			res.northRadar[i - 1] = 1;
 		}
-		if (x + i < board_size && currentGrid[x][y + i] == HOSTILE)
+		if (x + i < board_size && currentGrid[x + i][y] == HOSTILE)
 		{ // South
 			res.bombSouth = true;
 			res.southRadar[i - 1] = 1;
 		}
-		if (y - i >= 0 && currentGrid[x - i][y] == HOSTILE)
+		if (y - i >= 0 && currentGrid[x][y - i] == HOSTILE)
 		{ // West
 			res.bombWest = true;
 			res.westRadar[i - 1] = 1;
 		}
-		if (y + i < board_size && currentGrid[x + i][y] == HOSTILE)
+		if (y + i < board_size && currentGrid[x][y + i] == HOSTILE)
 		{ // East
 			res.bombEast = true;
 			res.eastRadar[i - 1] = 1;
