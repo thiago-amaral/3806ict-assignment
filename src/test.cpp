@@ -311,7 +311,7 @@ int main(int argc, char *argv[])
 	// generate world.csp
 	generate_known_world(current_world, sub_x, sub_y);
 
-	return EXIT_SUCCESS;
+	//return EXIT_SUCCESS;
 
 	// get output from pat
 	std::system(PAT_CMD.c_str());
