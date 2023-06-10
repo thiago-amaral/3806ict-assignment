@@ -7,3 +7,4 @@
 #define SUB_START_Y 0
 #define BOARD_H 5
 #define BOARD_W 10
+#define SUB_CAP 1

@@ -1,9 +1,9 @@
 =======================================================
-Assertion: Move() reaches goalAreaChecked
+Assertion: BestMove() reaches goalAreaChecked
 ********Verification Result********
-The Assertion (Move() reaches goalAreaChecked) is VALID.
+The Assertion (BestMove() reaches goalAreaChecked) is VALID.
 The following trace leads to a state where the condition is satisfied.
-<init -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveDown -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveDown -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveDown -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveDown -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight>
+<init -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveDown -> moveRight -> moveRight -> moveUp -> moveRight -> moveLeft -> moveDown -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveDown -> moveLeft -> moveLeft -> moveDown -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveDown -> moveRight -> moveRight -> moveUp -> moveUp -> moveLeft -> moveUp -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveDown -> moveDown -> moveDown -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveUp -> moveUp -> moveLeft -> moveUp -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveUp>
 
 ********Verification Setting********
 Admissible Behavior: All
@@ -12,16 +12,16 @@ System Abstraction: False
 
 
 ********Verification Statistics********
-Visited States:169
-Total Transitions:168
-Time Used:0.0097862s
+Visited States:179
+Total Transitions:270
+Time Used:0.012948s
 Estimated Memory Used:8530.16KB
 
 
 =======================================================
-Assertion: Move() reaches home
+Assertion: WorstMove() reaches home
 ********Verification Result********
-The Assertion (Move() reaches home) is VALID.
+The Assertion (WorstMove() reaches home) is VALID.
 The following trace leads to a state where the condition is satisfied.
 <init>
 
@@ -34,7 +34,7 @@ System Abstraction: False
 ********Verification Statistics********
 Visited States:1
 Total Transitions:0
-Time Used:6.97E-05s
-Estimated Memory Used:8525.856KB
+Time Used:0.0001906s
+Estimated Memory Used:8525.504KB
 
 

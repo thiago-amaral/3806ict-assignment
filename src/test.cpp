@@ -13,6 +13,9 @@
 #include <string>
 #include <utility>
 
+int OnBoard = 0;
+#define SubIsHome(sub_x, sub_y) (sub_x == SUB_START_X && sub_y == SUB_START_Y)
+
 // ros::ServiceClient sensorClient;
 std::string homeDir = getenv("HOME");
 
@@ -90,7 +93,7 @@ std::pair<int, int> update_position(std::string &move, int &x, int &y)
 	return {x, y};
 }
 
-void update_directions(std::queue<std::string> &q)
+void update_directions(std::queue<std::string> &q, bool return_home)
 {
 	std::ifstream pat_output(homeDir + "/catkin_ws/src/3806ict_assignment_3/pat/output.txt");
 	if (!pat_output.is_open())
@@ -105,8 +108,15 @@ void update_directions(std::queue<std::string> &q)
 	std::string move;
 	while (getline(pat_output, line))
 	{
+
 		if (line[0] == '<') // correct line
 		{
+			// Swap between searching route and return home route
+			if(return_home){
+				return_home = !return_home;
+				continue;
+			}
+				
 			std::istringstream ss(line);
 			ss >> move; // skip <init
 			// each move will be preceded by " -> "
@@ -306,14 +316,23 @@ int main(int argc, char *argv[])
 	std::system(PAT_CMD.c_str());
 
 	// extract directions from output
-	update_directions(q);
+	update_directions(q, false);
 	std::string next_move;
 	sensor_srv.request.sensorRange = 1;
 	ros::Rate rate(2);
 
+
+
 	while (true)
 	{
 		ROS_INFO("-- Start of cycle --");
+		
+		if(SubIsHome(sub_x, sub_y) && OnBoard == SUB_CAP){
+			OnBoard = 0;
+			generate_known_world(current_world, sub_x, sub_y);
+			std::system(PAT_CMD.c_str());
+			update_directions(q, false);
+		}
 		// get next direction
 		if (q.empty())
 		{
@@ -347,7 +366,7 @@ int main(int argc, char *argv[])
 			// regenerate pat directions
 			generate_known_world(current_world, sub_x, sub_y);
 			std::system(PAT_CMD.c_str());
-			update_directions(q);
+			update_directions(q, false);
 			continue;
 		}
 
@@ -378,6 +397,18 @@ int main(int argc, char *argv[])
 		if (sensor_srv.response.survivorDetected)
 		{
 			ROS_INFO("survior detected!!");
+			
+			OnBoard ++;
+			if (OnBoard == SUB_CAP){
+				// generate world.csp
+				generate_known_world(current_world, sub_x, sub_y);
+
+				// get output from pat
+				std::system(PAT_CMD.c_str());
+				
+				// extract directions from output
+				update_directions(q, true);
+			}
 			// return EXIT_FAILURE;
 		}
 		// translate world to vector for multiarray

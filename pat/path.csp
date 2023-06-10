@@ -53,11 +53,14 @@ MoveRightIfNotVisited() = [MoveRightCond && MoveRightCondNotVisited] moveRight{y
 
 MoveIfNotVisited() = MoveUpIfNotVisited() [] MoveDownIfNotVisited() [] MoveLeftIfNotVisited() [] MoveRightIfNotVisited();
 MoveIfVisited() = MoveUpIfVisited() [] MoveDownIfVisited() [] MoveLeftIfVisited() [] MoveRightIfVisited();
-Move() = (MoveIfVisited() [] MoveIfNotVisited());Move();
+BestMove() = (MoveIfVisited() [] MoveIfNotVisited());BestMove();
+WorstMove() = (MoveIfVisited());WorstMove();
 
 // primitive goal, entire area has been checked
-#define goalAreaChecked (&& i:{0..Rows-1}@(&& j:{0..Cols-1}@(world[i][j] == Visited || world[i][j] == Bomb)));
 #define home (xpos == 0 && ypos == 0);
+#define goalAreaChecked (&& i:{0..Rows-1}@(&& j:{0..Cols-1}@(world[i][j] == Visited || world[i][j] == Bomb)) && home);
 
-#assert Move() reaches goalAreaChecked;
-#assert Move() reaches home;
+
+
+#assert BestMove() reaches goalAreaChecked;
+#assert WorstMove() reaches home;
