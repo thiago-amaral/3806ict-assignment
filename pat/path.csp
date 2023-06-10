@@ -57,5 +57,7 @@ Move() = (MoveIfVisited() [] MoveIfNotVisited());Move();
 
 // primitive goal, entire area has been checked
 #define goalAreaChecked (&& i:{0..Rows-1}@(&& j:{0..Cols-1}@(world[i][j] == Visited || world[i][j] == Bomb)));
+#define home (xpos == 0 && ypos == 0);
 
 #assert Move() reaches goalAreaChecked;
+#assert Move() reaches home;

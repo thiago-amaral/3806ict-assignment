@@ -3,7 +3,7 @@ Assertion: Move() reaches goalAreaChecked
 ********Verification Result********
 The Assertion (Move() reaches goalAreaChecked) is VALID.
 The following trace leads to a state where the condition is satisfied.
-<init -> moveDown -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveUp -> moveRight -> moveUp -> moveRight -> moveRight -> moveLeft -> moveUp -> moveLeft -> moveLeft -> moveDown>
+<init -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveDown -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveDown -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveDown -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveDown -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight -> moveRight>
 
 ********Verification Setting********
 Admissible Behavior: All
@@ -12,9 +12,29 @@ System Abstraction: False
 
 
 ********Verification Statistics********
-Visited States:70
-Total Transitions:76
-Time Used:0.0071107s
+Visited States:169
+Total Transitions:168
+Time Used:0.0097862s
 Estimated Memory Used:8530.16KB
+
+
+=======================================================
+Assertion: Move() reaches home
+********Verification Result********
+The Assertion (Move() reaches home) is VALID.
+The following trace leads to a state where the condition is satisfied.
+<init>
+
+********Verification Setting********
+Admissible Behavior: All
+Search Engine: First Witness Trace using Depth First Search
+System Abstraction: False
+
+
+********Verification Statistics********
+Visited States:1
+Total Transitions:0
+Time Used:6.97E-05s
+Estimated Memory Used:8525.856KB
 
 
