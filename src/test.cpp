@@ -20,9 +20,11 @@ int OnBoard = 0;
 std::string homeDir = getenv("HOME");
 
 #define PAT_EXE_DIR homeDir + "/Desktop/MONO-PAT-v3.6.0/PAT3.Console.exe"
-#define PAT_PATH_CSP_DIR homeDir + "/catkin_ws/src/3806ict_assignment_3/pat/path.csp"
+#define PAT_PATH_CSP_EXPLORE_DIR homeDir + "/catkin_ws/src/3806ict_assignment_3/pat/explore.csp"
+#define PAT_PATH_CSP_HOME_DIR homeDir + "/catkin_ws/src/3806ict_assignment_3/pat/return_home.csp"
 #define PAT_OUTPUT_DIR homeDir + "/catkin_ws/src/3806ict_assignment_3/pat/output.txt"
-std::string PAT_CMD = "mono " + PAT_EXE_DIR + " -csp " + PAT_PATH_CSP_DIR + " " + PAT_OUTPUT_DIR;
+std::string PAT_CMD_DFS = "mono " + PAT_EXE_DIR + " " + PAT_PATH_CSP_EXPLORE_DIR + " " + PAT_OUTPUT_DIR;
+std::string PAT_CMD_BFS = "mono " + PAT_EXE_DIR + " -engine 1 " + PAT_PATH_CSP_HOME_DIR + " " + PAT_OUTPUT_DIR;
 
 void update_world(assignment_3::Sensors &srv, int (&curr_world)[BOARD_H][BOARD_W])
 {
@@ -93,7 +95,7 @@ std::pair<int, int> update_position(std::string &move, int &x, int &y)
 	return {x, y};
 }
 
-void update_directions(std::queue<std::string> &q, bool return_home)
+void update_directions(std::queue<std::string> &q)
 {
 	std::ifstream pat_output(homeDir + "/catkin_ws/src/3806ict_assignment_3/pat/output.txt");
 	if (!pat_output.is_open())
@@ -111,12 +113,6 @@ void update_directions(std::queue<std::string> &q, bool return_home)
 
 		if (line[0] == '<') // correct line
 		{
-			// Swap between searching route and return home route
-			if(return_home){
-				return_home = !return_home;
-				continue;
-			}
-				
 			std::istringstream ss(line);
 			ss >> move; // skip <init
 			// each move will be preceded by " -> "
@@ -241,6 +237,24 @@ std::vector<int> translate_world(int (&true_world)[BOARD_H][BOARD_W])
 	return vec;
 }
 
+void regenerate_moves(int (&current_world)[BOARD_H][BOARD_W], int &sub_x, int &sub_y, std::queue<std::string> &q, bool returnHome)
+{
+	// generate world.csp
+	generate_known_world(current_world, sub_x, sub_y);
+
+	// get output from pat (generate output.txt)
+	if (returnHome)
+	{
+		ROS_INFO("Executing command: %s", PAT_CMD_BFS.c_str());
+		std::system(PAT_CMD_BFS.c_str());
+	}
+	else
+		std::system(PAT_CMD_DFS.c_str());
+
+	// extract directions from output.txt
+	update_directions(q);
+}
+
 int main(int argc, char *argv[])
 {
 	// init ros
@@ -264,7 +278,7 @@ int main(int argc, char *argv[])
 	current_world[SUB_START_X][SUB_START_Y] = VISITED;
 	int sub_x = SUB_START_X;
 	int sub_y = SUB_START_Y;
-	generate_world(true_world, 3, 3);
+	generate_world(true_world, SURVIVOR_COUNT, HOSTILE_COUNT);
 
 	// int array[BOARD_H][BOARD_W] = {
 	//     {1, 2, 3, 0, 0, 0},
@@ -306,48 +320,47 @@ int main(int argc, char *argv[])
 	}
 
 	std::queue<std::string> q;
+	regenerate_moves(current_world, sub_x, sub_y, q, false);
 
-	// generate world.csp
-	generate_known_world(current_world, sub_x, sub_y);
-
-	// return EXIT_SUCCESS;
-
-	// get output from pat
-	std::system(PAT_CMD.c_str());
-
-	// extract directions from output
-	update_directions(q, false);
 	std::string next_move;
 	sensor_srv.request.sensorRange = 1;
 	ros::Rate rate(2);
 
-
-
+	int survivors_saved = 0;
 	while (true)
 	{
 		ROS_INFO("-- Start of cycle --");
-		
-		if(SubIsHome(sub_x, sub_y) && OnBoard == SUB_CAP){
+
+		if (SubIsHome(sub_x, sub_y))
+		{
+			// drop off any survivors
+			std::cout << "Saved " << OnBoard << " survivors. Total survivors now saved: " << survivors_saved << std::endl;
+			survivors_saved += OnBoard;
 			OnBoard = 0;
-			generate_known_world(current_world, sub_x, sub_y);
-			std::system(PAT_CMD.c_str());
-			update_directions(q, false);
 		}
 		// get next direction
 		if (q.empty())
 		{
-			ROS_INFO("Successfully visited all positions within search area!\nFinal internal representation of environment:");
-			for (int i = 0; i < BOARD_H; i++)
+			// have we collected all survivors?
+			if (survivors_saved == SURVIVOR_COUNT)
 			{
-				for (int j = 0; j < BOARD_W; j++)
+				ROS_INFO("Successfully visited all positions within search area!\nFinal internal representation of environment:");
+				for (int i = 0; i < BOARD_H; i++)
 				{
-					if (current_world[i][j] != VISITED)
-						std::cout << " ";
-					std::cout << current_world[i][j] << " ";
+					for (int j = 0; j < BOARD_W; j++)
+					{
+						if (current_world[i][j] != VISITED)
+							std::cout << " ";
+						std::cout << current_world[i][j] << " ";
+					}
+					std::cout << std::endl;
 				}
-				std::cout << std::endl;
+				return EXIT_SUCCESS;
 			}
-			return EXIT_SUCCESS;
+			else
+			{ // generate another exploration strategy
+				regenerate_moves(current_world, sub_x, sub_y, q, false);
+			}
 		}
 		next_move = std::string(q.front());
 		// remove direction from queue
@@ -364,9 +377,7 @@ int main(int argc, char *argv[])
 		{
 			ROS_INFO("About to move into hostile, recalculating PAT directions");
 			// regenerate pat directions
-			generate_known_world(current_world, sub_x, sub_y);
-			std::system(PAT_CMD.c_str());
-			update_directions(q, false);
+			regenerate_moves(current_world, sub_x, sub_y, q, false);
 			continue;
 		}
 
@@ -396,18 +407,14 @@ int main(int argc, char *argv[])
 		// let us know that we detected a survivor
 		if (sensor_srv.response.survivorDetected)
 		{
-			ROS_INFO("survior detected!!");
-			
-			OnBoard ++;
-			if (OnBoard == SUB_CAP){
-				// generate world.csp
-				generate_known_world(current_world, sub_x, sub_y);
-
-				// get output from pat
-				std::system(PAT_CMD.c_str());
-				
-				// extract directions from output
-				update_directions(q, true);
+			ROS_INFO("survivor detected!!");
+			OnBoard++;
+			std::cout << "Now have " << OnBoard << " survivors onboard" << std::endl;
+			if (OnBoard == SUB_CAP)
+			{
+				ROS_INFO("Hit max capacity!");
+				ROS_INFO("Calling regen_moves with BFS");
+				regenerate_moves(current_world, sub_x, sub_y, q, true);
 			}
 			// return EXIT_FAILURE;
 		}

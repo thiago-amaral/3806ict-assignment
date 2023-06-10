@@ -8,3 +8,5 @@
 #define BOARD_H 5
 #define BOARD_W 10
 #define SUB_CAP 1
+#define SURVIVOR_COUNT 3
+#define HOSTILE_COUNT 3
