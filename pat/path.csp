@@ -1,5 +1,7 @@
 #include "world.csp";
 
+var x = 0;
+
 // primitive tasks for overall move task
 // actions if conditions satisfied:
 	// move the position of the sub
@@ -10,31 +12,48 @@
 	// xpos != upper boundry, which is first row in world (0)
 // need to check if the next position is not an obstacle
 	// world[xpos-1][ypos] != Bomb
-MoveUp() = [(xpos != 0) && (world[xpos-1][ypos] != Bomb)] moveUp{xpos = xpos - 1; world[xpos][ypos] = Visited;} -> Skip;
+#define MoveUpCond (xpos != 0) && (world[xpos-1][ypos] != Bomb);
+#define MoveUpCondVisited (world[xpos-1][ypos] == Visited);
+#define MoveUpCondNotVisited (world[xpos-1][ypos] != Visited);
+MoveUpIfVisited() = [MoveUpCond && MoveUpCondVisited] moveUp{xpos = xpos - 1; world[xpos][ypos] = Visited;} -> Skip;
+MoveUpIfNotVisited() = [MoveUpCond && MoveUpCondNotVisited] moveUpIfNotVisited{xpos = xpos - 1; world[xpos][ypos] = Visited;} -> Skip;
 
 // in order to move down:
 // need to check if the current position is not at the boundary
 	// xpos != lower boundry, which is last row in world (Rows - 1)
 // need to check if the next position is not an obstacle
 	// world[xpos+1][ypos] != Bomb
-MoveDown() = [(xpos != Rows - 1) && (world[xpos+1][ypos] != Bomb)] moveDown{xpos = xpos + 1; world[xpos][ypos] = Visited;} -> Skip;
+#define MoveDownCond (xpos != Rows - 1) && (world[xpos+1][ypos] != Bomb);
+#define MoveDownCondVisited (world[xpos+1][ypos] == Visited);
+#define MoveDownCondNotVisited (world[xpos+1][ypos] != Visited);
+MoveDownIfVisited() = [MoveDownCond && MoveDownCondVisited] moveDown{xpos = xpos + 1; world[xpos][ypos] = Visited;} -> Skip;
+MoveDownIfNotVisited() = [MoveDownCond && MoveDownCondNotVisited] moveDownIfNotVisited{xpos = xpos + 1; world[xpos][ypos] = Visited;} -> Skip;
 
 // in order to move left:
 // need to check if the current position is not at the boundary
 	// ypos != left boundry, which is first column in world (0)
 // need to check if the next position is not an obstacle
 	// world[xpos][ypos-1] != Bomb
-MoveLeft() = [(ypos != 0) && (world[xpos][ypos-1] != Bomb)] moveLeft{ypos = ypos - 1; world[xpos][ypos] = Visited;} -> Skip;
+#define MoveLeftCond (ypos != 0) && (world[xpos][ypos-1] != Bomb);
+#define MoveLeftCondVisited (world[xpos][ypos-1] == Visited);
+#define MoveLeftCondNotVisited (world[xpos][ypos-1] != Visited);
+MoveLeftIfVisited() = [MoveLeftCond && MoveLeftCondVisited] moveLeft{ypos = ypos - 1; world[xpos][ypos] = Visited;} -> Skip;
+MoveLeftIfNotVisited() = [MoveLeftCond && MoveLeftCondNotVisited] moveLeftIfNotVisited{ypos = ypos - 1; world[xpos][ypos] = Visited;} -> Skip;
 
 // in order to move right:
 // need to check if the current position is not at the boundary
 	// ypos != right boundry, which is last column in world (Cols - 1)
 // need to check if the next position is not an obstacle
 	// world[xpos][ypos+1] != Bomb
-MoveRight() = [(ypos != Cols - 1) && (world[xpos][ypos+1] != Bomb)] moveRight{ypos = ypos + 1; world[xpos][ypos] = Visited;} -> Skip;
+#define MoveRightCond (ypos != Cols - 1) && (world[xpos][ypos+1] != Bomb);
+#define MoveRightCondVisited (world[xpos][ypos+1] == Visited);
+#define MoveRightCondNotVisited (world[xpos][ypos+1] != Visited);
+MoveRightIfVisited() = [MoveRightCond && MoveRightCondVisited] moveRight{ypos = ypos + 1; world[xpos][ypos] = Visited;} -> Skip;
+MoveRightIfNotVisited() = [MoveRightCond && MoveRightCondNotVisited] moveRightIfNotVisited{ypos = ypos + 1; world[xpos][ypos] = Visited;} -> Skip;
 
-Move() = (MoveUp() [] MoveDown() [] MoveLeft() [] MoveRight());Move();
-//Move() = MoveUp() [] MoveDown() [] MoveLeft() [] MoveRight();
+MoveIfNotVisited() = MoveUpIfNotVisited() [] MoveDownIfNotVisited() [] MoveLeftIfNotVisited() [] MoveRightIfNotVisited();
+MoveIfVisited() = MoveUpIfVisited() [] MoveDownIfVisited() [] MoveLeftIfVisited() [] MoveRightIfVisited();
+Move() = (MoveIfVisited() [] MoveIfNotVisited());Move();
 
 // primitive goal, entire area has been checked
 #define goalAreaChecked (&& i:{0..Rows-1}@(&& j:{0..Cols-1}@(world[i][j] == Visited || world[i][j] == Bomb)));
