@@ -11,16 +11,10 @@
 #include "gazebo_msgs/DeleteModel.h"
 #include "gazebo_msgs/SetModelState.h"
 #include "assignment_3/Sensors.h"
+#include "communal_defines.cpp"
 
-#define board_size 6
-#define VISITED -1
-#define EMPTY 0
-#define SUB 1
-#define HOSTILE 2
-#define SURVIVOR 3
-
-int currentGrid[board_size][board_size];
-geometry_msgs::Point coordinates[board_size][board_size];
+int currentGrid[BOARD_H][BOARD_W];
+geometry_msgs::Point coordinates[BOARD_H][BOARD_W];
 
 ros::ServiceClient spawnClient;
 ros::ServiceClient deleteClient;
@@ -87,12 +81,12 @@ bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid
 	gazebo_msgs::SetModelState set;
 	gazebo_msgs::DeleteModel del;
 	gazebo_msgs::SpawnModel spawn;
-	for (int i = 0; i < board_size; ++i)
+	for (int i = 0; i < BOARD_H; ++i)
 	{
-		for (int j = 0; j < board_size; ++j)
+		for (int j = 0; j < BOARD_W; ++j)
 		{
 			int oldIndex = currentGrid[i][j];
-			int newIndex = read_grid.data[i * board_size + j];
+			int newIndex = read_grid.data[i * BOARD_W + j];
 			if (oldIndex != newIndex)
 			{
 				// Get the corresponding coordinates
@@ -185,7 +179,7 @@ bool sensorReadings(assignment_3::Sensors::Request &req, assignment_3::Sensors::
 			res.bombNorth = true;
 			res.northRadar[i - 1] = 1;
 		}
-		if (x + i < board_size && currentGrid[x + i][y] == HOSTILE)
+		if (x + i < BOARD_H && currentGrid[x + i][y] == HOSTILE)
 		{ // South
 			res.bombSouth = true;
 			res.southRadar[i - 1] = 1;
@@ -195,7 +189,7 @@ bool sensorReadings(assignment_3::Sensors::Request &req, assignment_3::Sensors::
 			res.bombWest = true;
 			res.westRadar[i - 1] = 1;
 		}
-		if (y + i < board_size && currentGrid[x][y + i] == HOSTILE)
+		if (y + i < BOARD_W && currentGrid[x][y + i] == HOSTILE)
 		{ // East
 			res.bombEast = true;
 			res.eastRadar[i - 1] = 1;
@@ -209,9 +203,9 @@ int main(int argc, char **argv)
 	ros::init(argc, argv, "gazebo_object_manager");
 	ros::NodeHandle n;
 	// Initialize lastGrid to all O's
-	for (int i = 0; i < board_size; ++i)
+	for (int i = 0; i < BOARD_H; ++i)
 	{
-		for (int j = 0; j < board_size; ++j)
+		for (int j = 0; j < BOARD_W; ++j)
 		{
 			currentGrid[i][j] = EMPTY;
 		}
@@ -219,9 +213,9 @@ int main(int argc, char **argv)
 
 	// Initialise coordinates
 	double spacing = 1.0;
-	for (int i = 0; i < board_size; ++i)
+	for (int i = 0; i < BOARD_H; ++i)
 	{
-		for (int j = 0; j < board_size; ++j)
+		for (int j = 0; j < BOARD_W; ++j)
 		{
 			coordinates[i][j].x = i * spacing;
 			coordinates[i][j].y = j * spacing;

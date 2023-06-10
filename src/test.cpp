@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include "assignment_3/UpdateGrid.h"
 #include "assignment_3/Sensors.h"
+#include "communal_defines.cpp"
 #include <std_msgs/String.h>
 #include <std_msgs/Int32.h>
 #include <std_msgs/Int32MultiArray.h>
@@ -12,18 +13,6 @@
 #include <string>
 #include <utility>
 
-#define H 6
-#define W 6
-#define EMPTY 0
-#define SUB 1
-#define HOSTILE 2
-#define SURVIVOR 3
-#define SUB_START_X 0
-#define SUB_START_Y 0
-
-// PAT defines
-#define VISITED -1
-
 // ros::ServiceClient sensorClient;
 std::string homeDir = getenv("HOME");
 
@@ -32,7 +21,7 @@ std::string homeDir = getenv("HOME");
 #define PAT_OUTPUT_DIR homeDir + "/catkin_ws/src/3806ict_assignment_3/pat/output.txt"
 std::string PAT_CMD = "mono " + PAT_EXE_DIR + " -csp " + PAT_PATH_CSP_DIR + " " + PAT_OUTPUT_DIR;
 
-void update_world(assignment_3::Sensors &srv, int (&curr_world)[H][W])
+void update_world(assignment_3::Sensors &srv, int (&curr_world)[BOARD_H][BOARD_W])
 {
 	curr_world[srv.request.newSubXIndex][srv.request.newSubYIndex] = VISITED;
 	// east is col + 1
@@ -69,7 +58,7 @@ void update_world(assignment_3::Sensors &srv, int (&curr_world)[H][W])
 			}
 }
 
-void update_true_world(int old_x, int old_y, std::pair<int, int> new_coords, int (&true_world)[H][W])
+void update_true_world(int old_x, int old_y, std::pair<int, int> new_coords, int (&true_world)[BOARD_H][BOARD_W])
 {
 	int new_x = new_coords.first;
 	int new_y = new_coords.second;
@@ -137,12 +126,12 @@ void update_directions(std::queue<std::string> &q)
 	return;
 }
 
-void generate_world(int (&world)[H][W], int num_survivors, int num_hostiles)
+void generate_world(int (&world)[BOARD_H][BOARD_W], int num_survivors, int num_hostiles)
 {
 	// init world with EMPTY
-	for (int i = 0; i < H; ++i)
+	for (int i = 0; i < BOARD_H; ++i)
 	{
-		for (int j = 0; j < W; ++j)
+		for (int j = 0; j < BOARD_W; ++j)
 		{
 			world[i][j] = EMPTY;
 		}
@@ -154,8 +143,8 @@ void generate_world(int (&world)[H][W], int num_survivors, int num_hostiles)
 	// place survivors randomly
 	std::random_device rd;
 	std::mt19937 gen(rd());
-	std::uniform_int_distribution<int> rowDist(0, H - 1);
-	std::uniform_int_distribution<int> colDist(0, W - 1);
+	std::uniform_int_distribution<int> rowDist(0, BOARD_H - 1);
+	std::uniform_int_distribution<int> colDist(0, BOARD_W - 1);
 
 	int placed = 0;
 	while (placed < num_survivors)
@@ -183,7 +172,7 @@ void generate_world(int (&world)[H][W], int num_survivors, int num_hostiles)
 	}
 }
 
-void generate_known_world(int (&world)[H][W], int &sub_x, int &sub_y)
+void generate_known_world(int (&world)[BOARD_H][BOARD_W], int &sub_x, int &sub_y)
 {
 
 	std::ofstream file(homeDir + "/catkin_ws/src/3806ict_assignment_3/pat/world.csp");
@@ -199,17 +188,17 @@ void generate_known_world(int (&world)[H][W], int &sub_x, int &sub_y)
 	file << "#define Sub 1;\n";
 	file << "#define Bomb 2;\n";
 	file << "#define Survivor 3;\n\n";
-	file << "#define Rows " << H << ";\n";
-	file << "#define Cols " << W << ";\n";
-	file << "#define Fuel " << H * W << ";\n";
+	file << "#define Rows " << BOARD_H << ";\n";
+	file << "#define Cols " << BOARD_W << ";\n";
+	file << "#define Fuel " << BOARD_H * BOARD_W << ";\n";
 
 	// write new array representation of world
 	file << "\nvar world[Rows][Cols]:{Visited..Survivor} = [\n";
-	for (int i = 0; i < H; i++)
+	for (int i = 0; i < BOARD_H; i++)
 	{
-		for (int j = 0; j < W; j++)
+		for (int j = 0; j < BOARD_W; j++)
 		{
-			if (i == H - 1 && j == W - 1)
+			if (i == BOARD_H - 1 && j == BOARD_W - 1)
 			{
 				file << world[i][j];
 			}
@@ -233,12 +222,12 @@ void generate_known_world(int (&world)[H][W], int &sub_x, int &sub_y)
 	// std::cout << "Known environment created.\n" << std::endl;
 }
 
-std::vector<int> translate_world(int (&true_world)[H][W])
+std::vector<int> translate_world(int (&true_world)[BOARD_H][BOARD_W])
 {
-	std::vector<int> vec(W * H, 0);
-	for (int i = 0; i < H; i++)
-		for (int j = 0; j < W; j++)
-			vec[i * W + j] = true_world[i][j];
+	std::vector<int> vec(BOARD_W * BOARD_H, 0);
+	for (int i = 0; i < BOARD_H; i++)
+		for (int j = 0; j < BOARD_W; j++)
+			vec[i * BOARD_W + j] = true_world[i][j];
 	return vec;
 }
 
@@ -256,18 +245,18 @@ int main(int argc, char *argv[])
 
 	std_msgs::Int32MultiArray temp_grid;
 
-	int true_world[H][W];
-	int current_world[H][W];
+	int true_world[BOARD_H][BOARD_W];
+	int current_world[BOARD_H][BOARD_W];
 	// initialise all to 0
-	for (int i = 0; i < H; i++)
-		for (int j = 0; j < W; j++)
+	for (int i = 0; i < BOARD_H; i++)
+		for (int j = 0; j < BOARD_W; j++)
 			current_world[i][j] = 0;
 	current_world[SUB_START_X][SUB_START_Y] = VISITED;
 	int sub_x = SUB_START_X;
 	int sub_y = SUB_START_Y;
 	generate_world(true_world, 3, 3);
 
-	// int array[H][W] = {
+	// int array[BOARD_H][BOARD_W] = {
 	//     {1, 2, 3, 0, 0, 0},
 	//     {0, 0, 0, 0, 0, 0},
 	//     {0, 0, 0, 0, 2, 0},
@@ -282,15 +271,15 @@ int main(int argc, char *argv[])
 	temp_grid.layout.dim.push_back(std_msgs::MultiArrayDimension());
 	temp_grid.layout.dim[0].label = "height";
 	temp_grid.layout.dim[1].label = "width";
-	temp_grid.layout.dim[0].size = H;
-	temp_grid.layout.dim[1].size = W;
-	temp_grid.layout.dim[0].stride = H * W;
-	temp_grid.layout.dim[1].stride = W;
+	temp_grid.layout.dim[0].size = BOARD_H;
+	temp_grid.layout.dim[1].size = BOARD_W;
+	temp_grid.layout.dim[0].stride = BOARD_H * BOARD_W;
+	temp_grid.layout.dim[1].stride = BOARD_W;
 	temp_grid.layout.data_offset = 0;
-	std::vector<int> vec(W * H, 0);
-	for (int i = 0; i < H; i++)
-		for (int j = 0; j < W; j++)
-			vec[i * W + j] = true_world[i][j];
+	std::vector<int> vec(BOARD_W * BOARD_H, 0);
+	for (int i = 0; i < BOARD_H; i++)
+		for (int j = 0; j < BOARD_W; j++)
+			vec[i * BOARD_W + j] = true_world[i][j];
 	temp_grid.data = vec;
 	srv.request.grid = temp_grid;
 
@@ -311,7 +300,7 @@ int main(int argc, char *argv[])
 	// generate world.csp
 	generate_known_world(current_world, sub_x, sub_y);
 
-	//return EXIT_SUCCESS;
+	// return EXIT_SUCCESS;
 
 	// get output from pat
 	std::system(PAT_CMD.c_str());
@@ -329,9 +318,9 @@ int main(int argc, char *argv[])
 		if (q.empty())
 		{
 			ROS_INFO("Successfully visited all positions within search area!\nFinal internal representation of environment:");
-			for (int i = 0; i < H; i++)
+			for (int i = 0; i < BOARD_H; i++)
 			{
-				for (int j = 0; j < W; j++)
+				for (int j = 0; j < BOARD_W; j++)
 				{
 					if (current_world[i][j] != VISITED)
 						std::cout << " ";
