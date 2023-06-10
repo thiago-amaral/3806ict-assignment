@@ -16,7 +16,7 @@ var x = 0;
 #define MoveUpCondVisited (world[xpos-1][ypos] == Visited);
 #define MoveUpCondNotVisited (world[xpos-1][ypos] != Visited);
 MoveUpIfVisited() = [MoveUpCond && MoveUpCondVisited] moveUp{xpos = xpos - 1; world[xpos][ypos] = Visited;} -> Skip;
-MoveUpIfNotVisited() = [MoveUpCond && MoveUpCondNotVisited] moveUpIfNotVisited{xpos = xpos - 1; world[xpos][ypos] = Visited;} -> Skip;
+MoveUpIfNotVisited() = [MoveUpCond && MoveUpCondNotVisited] moveUp{xpos = xpos - 1; world[xpos][ypos] = Visited;} -> Skip;
 
 // in order to move down:
 // need to check if the current position is not at the boundary
@@ -27,7 +27,7 @@ MoveUpIfNotVisited() = [MoveUpCond && MoveUpCondNotVisited] moveUpIfNotVisited{x
 #define MoveDownCondVisited (world[xpos+1][ypos] == Visited);
 #define MoveDownCondNotVisited (world[xpos+1][ypos] != Visited);
 MoveDownIfVisited() = [MoveDownCond && MoveDownCondVisited] moveDown{xpos = xpos + 1; world[xpos][ypos] = Visited;} -> Skip;
-MoveDownIfNotVisited() = [MoveDownCond && MoveDownCondNotVisited] moveDownIfNotVisited{xpos = xpos + 1; world[xpos][ypos] = Visited;} -> Skip;
+MoveDownIfNotVisited() = [MoveDownCond && MoveDownCondNotVisited] moveDown{xpos = xpos + 1; world[xpos][ypos] = Visited;} -> Skip;
 
 // in order to move left:
 // need to check if the current position is not at the boundary
@@ -38,7 +38,7 @@ MoveDownIfNotVisited() = [MoveDownCond && MoveDownCondNotVisited] moveDownIfNotV
 #define MoveLeftCondVisited (world[xpos][ypos-1] == Visited);
 #define MoveLeftCondNotVisited (world[xpos][ypos-1] != Visited);
 MoveLeftIfVisited() = [MoveLeftCond && MoveLeftCondVisited] moveLeft{ypos = ypos - 1; world[xpos][ypos] = Visited;} -> Skip;
-MoveLeftIfNotVisited() = [MoveLeftCond && MoveLeftCondNotVisited] moveLeftIfNotVisited{ypos = ypos - 1; world[xpos][ypos] = Visited;} -> Skip;
+MoveLeftIfNotVisited() = [MoveLeftCond && MoveLeftCondNotVisited] moveLeft{ypos = ypos - 1; world[xpos][ypos] = Visited;} -> Skip;
 
 // in order to move right:
 // need to check if the current position is not at the boundary
@@ -49,7 +49,7 @@ MoveLeftIfNotVisited() = [MoveLeftCond && MoveLeftCondNotVisited] moveLeftIfNotV
 #define MoveRightCondVisited (world[xpos][ypos+1] == Visited);
 #define MoveRightCondNotVisited (world[xpos][ypos+1] != Visited);
 MoveRightIfVisited() = [MoveRightCond && MoveRightCondVisited] moveRight{ypos = ypos + 1; world[xpos][ypos] = Visited;} -> Skip;
-MoveRightIfNotVisited() = [MoveRightCond && MoveRightCondNotVisited] moveRightIfNotVisited{ypos = ypos + 1; world[xpos][ypos] = Visited;} -> Skip;
+MoveRightIfNotVisited() = [MoveRightCond && MoveRightCondNotVisited] moveRight{ypos = ypos + 1; world[xpos][ypos] = Visited;} -> Skip;
 
 MoveIfNotVisited() = MoveUpIfNotVisited() [] MoveDownIfNotVisited() [] MoveLeftIfNotVisited() [] MoveRightIfNotVisited();
 MoveIfVisited() = MoveUpIfVisited() [] MoveDownIfVisited() [] MoveLeftIfVisited() [] MoveRightIfVisited();
