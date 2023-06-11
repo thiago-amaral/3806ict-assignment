@@ -60,8 +60,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
   FILES
   UpdateGrid.srv
-  HostileSensor.srv
-  SurvivorSensor.srv
+  Sensor.srv
 )
 
 ## Generate actions in the 'action' folder

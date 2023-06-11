@@ -1,9 +1,9 @@
 =======================================================
-Assertion: WorstMove() reaches home
+Assertion: BestMove() reaches noSurvivors
 ********Verification Result********
-The Assertion (WorstMove() reaches home) is VALID.
+The Assertion (BestMove() reaches noSurvivors) is VALID.
 The following trace leads to a state where the condition is satisfied.
-<init -> moveUp -> moveUp -> moveLeft -> moveLeft -> moveUp -> moveLeft -> moveLeft -> moveLeft>
+<init>
 
 ********Verification Setting********
 Admissible Behavior: All
@@ -12,9 +12,9 @@ System Abstraction: False
 
 
 ********Verification Statistics********
-Visited States:24
-Total Transitions:66
-Time Used:0.0055947s
-Estimated Memory Used:8538.384KB
+Visited States:1
+Total Transitions:0
+Time Used:0.0031027s
+Estimated Memory Used:8538.008KB
 
 

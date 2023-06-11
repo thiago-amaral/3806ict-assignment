@@ -5,16 +5,22 @@
 #include <streambuf>
 #include <fstream>
 #include <map>
+#include <cmath>
 #include "geometry_msgs/Point.h"
 #include "assignment_3/UpdateGrid.h"
+#include "gazebo_msgs/GetModelState.h"
 #include "gazebo_msgs/SpawnModel.h"
 #include "gazebo_msgs/DeleteModel.h"
 #include "gazebo_msgs/SetModelState.h"
-#include "assignment_3/HostileSensor.h"
-#include "assignment_3/SurvivorSensor.h"
+#include "assignment_3/Sensor.h"
 #include "communal_defines.cpp"
 
+// ROS service client so sensors have access to bot position
+ros::ServiceClient bot_location;
+gazebo_msgs::GetModelState srv;
+
 int currentGrid[BOARD_H][BOARD_W];
+
 geometry_msgs::Point coordinates[BOARD_H][BOARD_W];
 
 ros::ServiceClient spawnClient;
@@ -148,16 +154,22 @@ bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid
 	return true;
 }
 
-bool hostileSensor(assignment_3::HostileSensor::Request &req, assignment_3::HostileSensor::Response &res)
+bool hostileSensor(assignment_3::Sensor::Request &req, assignment_3::Sensor::Response &res)
 {
 	// set all to false
-	res.bombNorth = false;
-	res.bombSouth = false;
-	res.bombWest = false;
-	res.bombEast = false;
-	res.survivorDetected = false;
-	int x = req.newSubXIndex;
-	int y = req.newSubYIndex;
+	res.objectNorth = false;
+	res.objectSouth = false;
+	res.objectWest = false;
+	res.objectEast = false;
+	res.objectDetected = false;
+
+	if (!bot_location.call(srv))
+		ROS_WARN("Failed to call ROS GetModelState service to get bot location");
+
+	int x = std::round(srv.response.pose.position.x);
+	int y = std::round(srv.response.pose.position.y);
+
+	std::cout << "Hostile sensor called, x: " << x << " y: " << y << std::endl;
 	int range = req.sensorRange;
 
 	// Initialize radar arrays
@@ -165,51 +177,52 @@ bool hostileSensor(assignment_3::HostileSensor::Request &req, assignment_3::Host
 	res.southRadar = std::vector<int32_t>(range, 0);
 	res.eastRadar = std::vector<int32_t>(range, 0);
 	res.westRadar = std::vector<int32_t>(range, 0);
-
-	// Check if survivor detected
-	if (currentGrid[x][y] == SURVIVOR)
-	{
-		res.survivorDetected = true;
-	}
 
 	// Check if there are bombs detected within the sensor range
 	for (int i = 1; i <= range; ++i)
 	{
 		if (x - i >= 0 && currentGrid[x - i][y] == HOSTILE)
 		{ // North
-			res.bombNorth = true;
+			res.objectNorth = true;
 			res.northRadar[i - 1] = 1;
 		}
 		if (x + i < BOARD_H && currentGrid[x + i][y] == HOSTILE)
 		{ // South
-			res.bombSouth = true;
+			res.objectSouth = true;
 			res.southRadar[i - 1] = 1;
 		}
 		if (y - i >= 0 && currentGrid[x][y - i] == HOSTILE)
 		{ // West
-			res.bombWest = true;
+			res.objectWest = true;
 			res.westRadar[i - 1] = 1;
 		}
 		if (y + i < BOARD_W && currentGrid[x][y + i] == HOSTILE)
 		{ // East
-			res.bombEast = true;
+			res.objectEast = true;
 			res.eastRadar[i - 1] = 1;
 		}
 	}
+	if (res.objectNorth || res.objectEast || res.objectSouth || res.objectWest)
+		res.objectDetected = true;
 	return true;
 }
 
-
-bool survivorSensor(assignment_3::SurvivorSensor::Request &req, assignment_3::SurvivorSensor::Response &res)
+bool survivorSensor(assignment_3::Sensor::Request &req, assignment_3::Sensor::Response &res)
 {
 	// set all to false
-	res.survivorNorth = false;
-	res.survivorSouth = false;
-	res.survivorWest = false;
-	res.survivorEast = false;
-	res.survivorDetected = false;
-	int x = req.newSubXIndex;
-	int y = req.newSubYIndex;
+	res.objectNorth = false;
+	res.objectSouth = false;
+	res.objectWest = false;
+	res.objectEast = false;
+	res.objectDetected = false;
+
+	if (!bot_location.call(srv))
+		ROS_WARN("Failed to call ROS GetModelState service to get bot location");
+
+	int x = std::round(srv.response.pose.position.x);
+	int y = std::round(srv.response.pose.position.y);
+
+	std::cout << "Survivor sensor called, x: " << x << " y: " << y << std::endl;
 	int range = req.sensorRange;
 
 	// Initialize radar arrays
@@ -218,36 +231,32 @@ bool survivorSensor(assignment_3::SurvivorSensor::Request &req, assignment_3::Su
 	res.eastRadar = std::vector<int32_t>(range, 0);
 	res.westRadar = std::vector<int32_t>(range, 0);
 
-	// Check if survivor detected
-	if (currentGrid[x][y] == SURVIVOR)
-	{
-		res.survivorDetected = true;
-	}
-
 	// Check if there are bombs detected within the sensor range
 	for (int i = 1; i <= range; ++i)
 	{
 		if (x - i >= 0 && currentGrid[x - i][y] == SURVIVOR)
 		{ // North
-			res.survivorNorth = true;
+			res.objectNorth = true;
 			res.northRadar[i - 1] = 1;
 		}
 		if (x + i < BOARD_H && currentGrid[x + i][y] == SURVIVOR)
 		{ // South
-			res.survivorSouth = true;
+			res.objectSouth = true;
 			res.southRadar[i - 1] = 1;
 		}
 		if (y - i >= 0 && currentGrid[x][y - i] == SURVIVOR)
 		{ // West
-			res.survivorWest = true;
+			res.objectWest = true;
 			res.westRadar[i - 1] = 1;
 		}
 		if (y + i < BOARD_W && currentGrid[x][y + i] == SURVIVOR)
 		{ // East
-			res.survivorEast = true;
+			res.objectEast = true;
 			res.eastRadar[i - 1] = 1;
 		}
 	}
+	if (res.objectNorth || res.objectEast || res.objectSouth || res.objectWest)
+		res.objectDetected = true;
 	return true;
 }
 
@@ -255,6 +264,9 @@ int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "gazebo_object_manager");
 	ros::NodeHandle n;
+	bot_location = n.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
+	srv.request.model_name = "submarine";
+
 	// Initialize lastGrid to all O's
 	for (int i = 0; i < BOARD_H; ++i)
 	{

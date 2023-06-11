@@ -10,7 +10,10 @@
 #define BOARD_H 5
 #define BOARD_W 10
 
-#define SUB_CAP 1
-#define SURVIVOR_COUNT 3
-#define HOSTILE_COUNT 3
+#define SUB_CAP 2
+#define SURVIVOR_COUNT 4
+#define HOSTILE_COUNT 6
 #define MAX_FUEL (BOARD_H * BOARD_W)
+
+#define HOSTILE_DETECTION_RANGE 2
+#define SURVIVOR_DETECTION_RANGE 1
