@@ -75,22 +75,18 @@ void update_true_world(int old_x, int old_y, std::pair<int, int> new_coords, int
 
 std::pair<int, int> update_position(std::string &move, int &x, int &y)
 {
+	// moving right is col + 1
 	if (move == "moveRight")
-	{ // moving right is col + 1
-		return {x, y + 1};
-	}
+		return { x, y + 1 }
+	// moving left is col - 1
 	else if (move == "moveLeft")
-	{ // moving left is col - 1
 		return {x, y - 1};
-	}
+	// moving up is row - 1
 	else if (move == "moveUp")
-	{ // moving up is row - 1
 		return {x - 1, y};
-	}
+	// moving down is row + 1
 	else if (move == "moveDown")
-	{ // moving down is row + 1
 		return {x + 1, y};
-	}
 	std::cerr << "update_position found invalid move: " << move << std::endl;
 	return {x, y};
 }
@@ -110,7 +106,6 @@ void update_directions(std::queue<std::string> &q)
 	std::string move;
 	while (getline(pat_output, line))
 	{
-
 		if (line[0] == '<') // correct line
 		{
 			std::istringstream ss(line);
@@ -136,12 +131,8 @@ void generate_world(int (&world)[BOARD_H][BOARD_W], int num_survivors, int num_h
 {
 	// init world with EMPTY
 	for (int i = 0; i < BOARD_H; ++i)
-	{
 		for (int j = 0; j < BOARD_W; ++j)
-		{
 			world[i][j] = EMPTY;
-		}
-	}
 
 	// place sub in top right corner (origin)
 	world[SUB_START_X][SUB_START_Y] = SUB;
@@ -196,7 +187,7 @@ void generate_known_world(int (&world)[BOARD_H][BOARD_W], int &sub_x, int &sub_y
 	file << "#define Survivor 3;\n\n";
 	file << "#define Rows " << BOARD_H << ";\n";
 	file << "#define Cols " << BOARD_W << ";\n";
-	file << "#define Fuel " << BOARD_H * BOARD_W << ";\n";
+	file << "#define Fuel " << MAX_FUEL << ";\n";
 
 	// write new array representation of world
 	file << "\nvar world[Rows][Cols]:{Visited..Survivor} = [\n";
@@ -205,13 +196,9 @@ void generate_known_world(int (&world)[BOARD_H][BOARD_W], int &sub_x, int &sub_y
 		for (int j = 0; j < BOARD_W; j++)
 		{
 			if (i == BOARD_H - 1 && j == BOARD_W - 1)
-			{
 				file << world[i][j];
-			}
 			else
-			{
 				file << world[i][j] << ", ";
-			}
 		}
 		file << "\n";
 	}
@@ -378,6 +365,7 @@ int main(int argc, char *argv[])
 			ROS_INFO("About to move into hostile, recalculating PAT directions");
 			// regenerate pat directions
 			regenerate_moves(current_world, sub_x, sub_y, q, false);
+			rate.sleep();
 			continue;
 		}
 
@@ -416,16 +404,14 @@ int main(int argc, char *argv[])
 				ROS_INFO("Calling regen_moves with BFS");
 				regenerate_moves(current_world, sub_x, sub_y, q, true);
 			}
-			// return EXIT_FAILURE;
 		}
+
 		// translate world to vector for multiarray
 		temp_grid.data = translate_world(true_world);
 		srv.request.grid = temp_grid;
 		// call update_grid service
 		if (!client.call(srv))
-		{
 			ROS_ERROR("Failed to call service updateGrid");
-		}
 		ROS_INFO("-- End of cycle --\n");
 
 		rate.sleep();
