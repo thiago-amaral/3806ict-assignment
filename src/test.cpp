@@ -31,7 +31,7 @@ std::string PAT_CMD_EXPLORE = "mono " + PAT_EXE_DIR + " " + PAT_PATH_CSP_EXPLORE
 std::string PAT_CMD_GO_HOME = "mono " + PAT_EXE_DIR + " -engine 1 " + PAT_PATH_CSP_HOME_DIR + " " + PAT_OUTPUT_DIR;
 std::string PAT_CMD_COLLECT_SURVIVORS = "mono " + PAT_EXE_DIR + " -engine 1 " + PAT_PATH_CSP_COLLECT_SURVIVORS_DIR + " " + PAT_OUTPUT_DIR;
 
-void update_world(assignment_3::Sensor &hostile_srv, assignment_3::Sensor &survivor_srv, int (&curr_world)[BOARD_H][BOARD_W], int &sub_x, int &sub_y)
+void detect_hostiles(assignment_3::Sensor &hostile_srv, int (&curr_world)[BOARD_H][BOARD_W], int &sub_x, int &sub_y)
 {
 	// hostile detection
 	// east is col + 1
@@ -66,40 +66,53 @@ void update_world(assignment_3::Sensor &hostile_srv, assignment_3::Sensor &survi
 				curr_world[sub_x + 1 + i][sub_y] = HOSTILE;
 				ROS_INFO("Bomb detected south!");
 			}
+}
 
+int detect_survivors(assignment_3::Sensor &survivor_srv, int (&curr_world)[BOARD_H][BOARD_W], int &sub_x, int &sub_y)
+{
 	// survivor detection
+	int newSurvivorsDetected = 0;
 	// east is col + 1
 	if (survivor_srv.response.objectEast)
 		for (int i = 0; i < survivor_srv.request.sensorRange; i++)
 			if (survivor_srv.response.eastRadar[i])
-			{
-				curr_world[sub_x][sub_y + 1 + i] = SURVIVOR;
-				ROS_INFO("Survivor detected east!");
-			}
+				if (curr_world[sub_x][sub_y + 1 + i] != SURVIVOR)
+				{
+					newSurvivorsDetected++;
+					curr_world[sub_x][sub_y + 1 + i] = SURVIVOR;
+					ROS_INFO("New survivor detected east!");
+				}
 	// west is col - 1
 	if (survivor_srv.response.objectWest)
 		for (int i = 0; i < survivor_srv.request.sensorRange; i++)
 			if (survivor_srv.response.westRadar[i])
-			{
-				curr_world[sub_x][sub_y - 1 - i] = SURVIVOR;
-				ROS_INFO("Survivor detected west!");
-			}
+				if (curr_world[sub_x][sub_y - 1 - i] != SURVIVOR)
+				{
+					newSurvivorsDetected++;
+					curr_world[sub_x][sub_y - 1 - i] = SURVIVOR;
+					ROS_INFO("Survivor detected west!");
+				}
 	// north is row - 1
 	if (survivor_srv.response.objectNorth)
 		for (int i = 0; i < survivor_srv.request.sensorRange; i++)
 			if (survivor_srv.response.northRadar[i])
-			{
-				curr_world[sub_x - 1 - i][sub_y] = SURVIVOR;
-				ROS_INFO("Survivor detected north!");
-			}
+				if (curr_world[sub_x - 1 - i][sub_y] != SURVIVOR)
+				{
+					newSurvivorsDetected++;
+					curr_world[sub_x - 1 - i][sub_y] = SURVIVOR;
+					ROS_INFO("Survivor detected north!");
+				}
 	// south is row + 1
 	if (survivor_srv.response.objectSouth)
 		for (int i = 0; i < survivor_srv.request.sensorRange; i++)
 			if (survivor_srv.response.southRadar[i])
-			{
-				curr_world[sub_x + 1 + i][sub_y] = SURVIVOR;
-				ROS_INFO("Survivor detected south!");
-			}
+				if (curr_world[sub_x + 1 + i][sub_y] = SURVIVOR)
+				{
+					newSurvivorsDetected++;
+					curr_world[sub_x + 1 + i][sub_y] = SURVIVOR;
+					ROS_INFO("Survivor detected south!");
+				}
+	return newSurvivorsDetected;
 }
 
 void update_true_world(int old_x, int old_y, std::pair<int, int> new_coords, int (&true_world)[BOARD_H][BOARD_W])
@@ -394,15 +407,15 @@ int main(int argc, char *argv[])
 	// observe information and make decisions
 	// update our current world with any detected hostiles
 	// update our current world with any detected survivors
-	update_world(hostile_srv, survivor_srv, current_world, sub_x, sub_y);
+	detect_hostiles(hostile_srv, current_world, sub_x, sub_y);
+	int newSurvivorsDetected = detect_survivors(survivor_srv, current_world, sub_x, sub_y);
 
-	if (survivor_srv.response.objectDetected)
+	if (newSurvivorsDetected)
 	{
 		// detected a survivor, change our planning to pick them up ASAP
-		ROS_INFO("Survivor detected!!");
+		ROS_INFO("New survivor detected!!");
 		survivors_seen++;
 		currentPath = COLLECT_SURVIVORS;
-		regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
 	}
 
 	regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
@@ -542,12 +555,13 @@ int main(int argc, char *argv[])
 		// observe information and make decisions
 		// update our current world with any detected hostiles
 		// update our current world with any detected survivors
-		update_world(hostile_srv, survivor_srv, current_world, sub_x, sub_y);
+		detect_hostiles(hostile_srv, current_world, sub_x, sub_y);
+		newSurvivorsDetected = detect_survivors(survivor_srv, current_world, sub_x, sub_y);
 
-		if (survivor_srv.response.objectDetected)
+		if (newSurvivorsDetected)
 		{
 			// detected a survivor, change our planning to pick them up ASAP
-			ROS_INFO("Survivor detected!!");
+			ROS_INFO("New survivor detected!!");
 			survivors_seen++;
 			currentPath = COLLECT_SURVIVORS;
 			regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);

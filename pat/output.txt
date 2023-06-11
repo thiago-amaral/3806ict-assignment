@@ -3,7 +3,7 @@ Assertion: BestMove() reaches noSurvivors
 ********Verification Result********
 The Assertion (BestMove() reaches noSurvivors) is VALID.
 The following trace leads to a state where the condition is satisfied.
-<init -> moveUp -> moveUp -> moveUp -> moveUp -> moveLeft -> moveLeft -> moveLeft -> moveLeft>
+<init -> moveUp -> moveUp -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveUp -> moveLeft -> moveLeft -> moveLeft -> moveLeft -> moveLeft>
 
 ********Verification Setting********
 Admissible Behavior: All
@@ -12,9 +12,9 @@ System Abstraction: False
 
 
 ********Verification Statistics********
-Visited States:720
-Total Transitions:1246
-Time Used:0.0470202s
-Estimated Memory Used:9816.688KB
+Visited States:8153
+Total Transitions:15394
+Time Used:0.5525933s
+Estimated Memory Used:23248.856KB
 
 
