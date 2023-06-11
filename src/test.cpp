@@ -274,11 +274,20 @@ void regenerate_moves(int (&current_world)[BOARD_H][BOARD_W], int &sub_x, int &s
 
 	// get output from pat (generate output.txt)
 	if (currentPath == SURVEY_AREA)
+	{
+		ROS_INFO("Calculating a path to survey remaining area");
 		std::system(PAT_CMD_EXPLORE.c_str());
+	}
 	else if (currentPath == COLLECT_SURVIVORS)
+	{
+		ROS_INFO("Calculating a path to collect remaining survivors");
 		std::system(PAT_CMD_COLLECT_SURVIVORS.c_str());
+	}
 	else if (currentPath == GO_HOME)
+	{
+		ROS_INFO("Calculating a path to go home");
 		std::system(PAT_CMD_GO_HOME.c_str());
+	}
 	else
 	{
 		ROS_WARN("Received unknown path command! Aborting mission");
@@ -403,8 +412,6 @@ int main(int argc, char *argv[])
 	survivor_srv.request.sensorRange = SURVIVOR_DETECTION_RANGE;
 	ros::Rate rate(2);
 
-	
-
 	while (true)
 	{
 		ROS_INFO("-- Start of cycle --");
@@ -412,8 +419,8 @@ int main(int argc, char *argv[])
 		if (SubIsHome(sub_x, sub_y) && OnBoard)
 		{
 			// drop off any survivors
-			std::cout << "Saved " << OnBoard << " survivors. Total survivors now saved: " << survivors_saved << std::endl;
 			survivors_saved += OnBoard;
+			std::cout << "Saved " << OnBoard << " survivors. Total survivors now saved: " << survivors_saved << std::endl;
 			OnBoard = 0;
 		}
 		// get next direction
@@ -446,7 +453,7 @@ int main(int argc, char *argv[])
 			else
 			{ // still people left to be saved
 				// we know where people are
-				if (survivors_seen > survivors_saved)
+				if (survivors_seen > (survivors_saved + OnBoard))
 				{
 					// need a strategy to save those people
 					currentPath = COLLECT_SURVIVORS;
