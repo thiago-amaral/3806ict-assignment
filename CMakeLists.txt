@@ -111,7 +111,7 @@ generate_messages(
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES 3806ict_assignment_3
-#  CATKIN_DEPENDS gazebo_msgs geometry_msgs message_generation roscpp std_msgs
+ CATKIN_DEPENDS gazebo_msgs geometry_msgs message_generation roscpp std_msgs
 #  DEPENDS system_lib
 )
 
