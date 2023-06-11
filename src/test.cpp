@@ -317,6 +317,9 @@ int main(int argc, char *argv[])
 
 	std_msgs::Int32MultiArray temp_grid;
 
+	int survivors_saved = 0;
+	int survivors_seen = 0;
+
 	int true_world[BOARD_H][BOARD_W];
 	int current_world[BOARD_H][BOARD_W];
 	// initialise all to 0
@@ -372,6 +375,27 @@ int main(int argc, char *argv[])
 	std::queue<std::string> q;
 	// extract information from sensors at our starting position
 	// in case there is anything to be seen from home?
+	// call the sensors and extract information
+	if (!hostileSensorClient.call(hostile_srv) || !survivorSensorClient.call(survivor_srv))
+	{
+		ROS_ERROR("Failed to call sensor services");
+		return EXIT_FAILURE;
+	}
+
+	// observe information and make decisions
+	// update our current world with any detected hostiles
+	// update our current world with any detected survivors
+	update_world(hostile_srv, survivor_srv, current_world, sub_x, sub_y);
+
+	if (survivor_srv.response.objectDetected)
+	{
+		// detected a survivor, change our planning to pick them up ASAP
+		ROS_INFO("Survivor detected!!");
+		survivors_seen++;
+		currentPath = COLLECT_SURVIVORS;
+		regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
+	}
+
 	regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
 
 	std::string next_move;
@@ -379,8 +403,7 @@ int main(int argc, char *argv[])
 	survivor_srv.request.sensorRange = SURVIVOR_DETECTION_RANGE;
 	ros::Rate rate(2);
 
-	int survivors_saved = 0;
-	int survivors_seen = 0;
+	
 
 	while (true)
 	{
