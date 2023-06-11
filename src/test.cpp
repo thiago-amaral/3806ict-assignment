@@ -80,7 +80,7 @@ int detect_survivors(assignment_3::Sensor &survivor_srv, int (&curr_world)[BOARD
 				{
 					newSurvivorsDetected++;
 					curr_world[sub_x][sub_y + 1 + i] = SURVIVOR;
-					ROS_INFO("New survivor detected east!");
+					std::cout << "New survivor detected east! x: " << sub_x << " y: " << sub_y + 1 + i << std::endl;
 				}
 	// west is col - 1
 	if (survivor_srv.response.objectWest)
@@ -90,7 +90,7 @@ int detect_survivors(assignment_3::Sensor &survivor_srv, int (&curr_world)[BOARD
 				{
 					newSurvivorsDetected++;
 					curr_world[sub_x][sub_y - 1 - i] = SURVIVOR;
-					ROS_INFO("Survivor detected west!");
+					std::cout << "New survivor detected west! x: " << sub_x << " y: " << sub_y - 1 - i << std::endl;
 				}
 	// north is row - 1
 	if (survivor_srv.response.objectNorth)
@@ -100,17 +100,17 @@ int detect_survivors(assignment_3::Sensor &survivor_srv, int (&curr_world)[BOARD
 				{
 					newSurvivorsDetected++;
 					curr_world[sub_x - 1 - i][sub_y] = SURVIVOR;
-					ROS_INFO("Survivor detected north!");
+					std::cout << "New survivor detected north! x: " << sub_x - 1 - i << " y: " << sub_y << std::endl;
 				}
 	// south is row + 1
 	if (survivor_srv.response.objectSouth)
 		for (int i = 0; i < survivor_srv.request.sensorRange; i++)
 			if (survivor_srv.response.southRadar[i])
-				if (curr_world[sub_x + 1 + i][sub_y] = SURVIVOR)
+				if (curr_world[sub_x + 1 + i][sub_y] != SURVIVOR)
 				{
 					newSurvivorsDetected++;
 					curr_world[sub_x + 1 + i][sub_y] = SURVIVOR;
-					ROS_INFO("Survivor detected south!");
+					std::cout << "New survivor detected south! x: " << sub_x + 1 + i << " y: " << sub_y << std::endl;
 				}
 	return newSurvivorsDetected;
 }
@@ -177,6 +177,31 @@ void update_directions(std::queue<std::string> &q)
 	}
 	pat_output.close();
 	return;
+}
+
+void test_generate_world(int (&world)[BOARD_H][BOARD_W])
+{
+
+	/*
+	0, 2, 0, 0
+	0, 0, 3, 3
+	0, 3, 3, 3
+	0, 0, 0, 0
+	*/
+	// init world with EMPTY
+	for (int i = 0; i < BOARD_H; ++i)
+		for (int j = 0; j < BOARD_W; ++j)
+			world[i][j] = EMPTY;
+
+	// place sub in top right corner (origin)
+	world[SUB_START_X][SUB_START_Y] = SUB;
+
+	world[0][1] = HOSTILE;
+	world[1][2] = SURVIVOR;
+	world[1][3] = SURVIVOR;
+	world[2][1] = SURVIVOR;
+	world[2][2] = SURVIVOR;
+	world[2][3] = SURVIVOR;
 }
 
 void generate_world(int (&world)[BOARD_H][BOARD_W], int num_survivors, int num_hostiles)
@@ -353,7 +378,8 @@ int main(int argc, char *argv[])
 	int sub_y = SUB_START_Y;
 	int OnBoard = 0;
 	int currentPath = SURVEY_AREA;
-	generate_world(true_world, SURVIVOR_COUNT, HOSTILE_COUNT);
+	// generate_world(true_world, SURVIVOR_COUNT, HOSTILE_COUNT);
+	test_generate_world(true_world);
 
 	// int array[BOARD_H][BOARD_W] = {
 	//     {1, 2, 3, 0, 0, 0},
@@ -395,6 +421,9 @@ int main(int argc, char *argv[])
 	}
 
 	std::queue<std::string> q;
+
+	hostile_srv.request.sensorRange = HOSTILE_DETECTION_RANGE;
+	survivor_srv.request.sensorRange = SURVIVOR_DETECTION_RANGE;
 	// extract information from sensors at our starting position
 	// in case there is anything to be seen from home?
 	// call the sensors and extract information
@@ -421,9 +450,7 @@ int main(int argc, char *argv[])
 	regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
 
 	std::string next_move;
-	hostile_srv.request.sensorRange = HOSTILE_DETECTION_RANGE;
-	survivor_srv.request.sensorRange = SURVIVOR_DETECTION_RANGE;
-	ros::Rate rate(2);
+	ros::Rate rate(1);
 
 	while (true)
 	{
@@ -440,7 +467,7 @@ int main(int argc, char *argv[])
 		if (q.empty())
 		{
 			// have we collected all survivors?
-			if (survivors_saved == SURVIVOR_COUNT)
+			if ((survivors_saved + OnBoard) == SURVIVOR_COUNT)
 			{
 				if (SubIsHome(sub_x, sub_y))
 				{
@@ -466,6 +493,8 @@ int main(int argc, char *argv[])
 			else
 			{ // still people left to be saved
 				// we know where people are
+				ROS_INFO("We've run out of moves, but there's still people left to be saved!");
+				std::cout << "survivors seen: " << survivors_seen << " saved: " << survivors_saved << " onBoard: " << OnBoard << std::endl;
 				if (survivors_seen > (survivors_saved + OnBoard))
 				{
 					// need a strategy to save those people
@@ -561,8 +590,8 @@ int main(int argc, char *argv[])
 		if (newSurvivorsDetected)
 		{
 			// detected a survivor, change our planning to pick them up ASAP
-			ROS_INFO("New survivor detected!!");
-			survivors_seen++;
+			std::cout << "Info from bot: " << newSurvivorsDetected << " new survivors detected" << std::endl;
+			survivors_seen += newSurvivorsDetected;
 			currentPath = COLLECT_SURVIVORS;
 			regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
 		}
