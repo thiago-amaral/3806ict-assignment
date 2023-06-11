@@ -77,7 +77,7 @@ std::pair<int, int> update_position(std::string &move, int &x, int &y)
 {
 	// moving right is col + 1
 	if (move == "moveRight")
-		return { x, y + 1 }
+		return { x, y + 1 };
 	// moving left is col - 1
 	else if (move == "moveLeft")
 		return {x, y - 1};
@@ -250,7 +250,7 @@ int main(int argc, char *argv[])
 
 	// create client
 	ros::ServiceClient client = n.serviceClient<assignment_3::UpdateGrid>("/update_grid");
-	ros::ServiceClient sensorClient = n.serviceClient<assignment_3::Sensors>("/SensorReadings");
+	ros::ServiceClient sensorClient = n.serviceClient<assignment_3::Sensors>("/hostile_sensor");
 	assignment_3::UpdateGrid srv;
 	assignment_3::Sensors sensor_srv;
 

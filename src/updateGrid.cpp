@@ -10,7 +10,8 @@
 #include "gazebo_msgs/SpawnModel.h"
 #include "gazebo_msgs/DeleteModel.h"
 #include "gazebo_msgs/SetModelState.h"
-#include "assignment_3/Sensors.h"
+#include "assignment_3/HostileSensor.h"
+#include "assignment_3/SurvivorSensor.h"
 #include "communal_defines.cpp"
 
 int currentGrid[BOARD_H][BOARD_W];
@@ -147,7 +148,7 @@ bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid
 	return true;
 }
 
-bool sensorReadings(assignment_3::Sensors::Request &req, assignment_3::Sensors::Response &res)
+bool hostileSensor(assignment_3::HostileSensor::Request &req, assignment_3::HostileSensor::Response &res)
 {
 	// set all to false
 	res.bombNorth = false;
@@ -198,6 +199,58 @@ bool sensorReadings(assignment_3::Sensors::Request &req, assignment_3::Sensors::
 	return true;
 }
 
+
+bool survivorSensor(assignment_3::SurvivorSensor::Request &req, assignment_3::SurvivorSensor::Response &res)
+{
+	// set all to false
+	res.survivorNorth = false;
+	res.survivorSouth = false;
+	res.survivorWest = false;
+	res.survivorEast = false;
+	res.survivorDetected = false;
+	int x = req.newSubXIndex;
+	int y = req.newSubYIndex;
+	int range = req.sensorRange;
+
+	// Initialize radar arrays
+	res.northRadar = std::vector<int32_t>(range, 0);
+	res.southRadar = std::vector<int32_t>(range, 0);
+	res.eastRadar = std::vector<int32_t>(range, 0);
+	res.westRadar = std::vector<int32_t>(range, 0);
+
+	// Check if survivor detected
+	if (currentGrid[x][y] == SURVIVOR)
+	{
+		res.survivorDetected = true;
+	}
+
+	// Check if there are bombs detected within the sensor range
+	for (int i = 1; i <= range; ++i)
+	{
+		if (x - i >= 0 && currentGrid[x - i][y] == SURVIVOR)
+		{ // North
+			res.survivorNorth = true;
+			res.northRadar[i - 1] = 1;
+		}
+		if (x + i < BOARD_H && currentGrid[x + i][y] == SURVIVOR)
+		{ // South
+			res.survivorSouth = true;
+			res.southRadar[i - 1] = 1;
+		}
+		if (y - i >= 0 && currentGrid[x][y - i] == SURVIVOR)
+		{ // West
+			res.survivorWest = true;
+			res.westRadar[i - 1] = 1;
+		}
+		if (y + i < BOARD_W && currentGrid[x][y + i] == SURVIVOR)
+		{ // East
+			res.survivorEast = true;
+			res.eastRadar[i - 1] = 1;
+		}
+	}
+	return true;
+}
+
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "gazebo_object_manager");
@@ -226,7 +279,8 @@ int main(int argc, char **argv)
 	setClient = n.serviceClient<gazebo_msgs::SetModelState>("gazebo/set_model_state");
 	spawnClient = n.serviceClient<gazebo_msgs::SpawnModel>("gazebo/spawn_sdf_model");
 	deleteClient = n.serviceClient<gazebo_msgs::DeleteModel>("gazebo/delete_model");
-	ros::ServiceServer SensorService = n.advertiseService("SensorReadings", sensorReadings);
+	ros::ServiceServer HostileSenService = n.advertiseService("hostile_sensor", hostileSensor);
+	ros::ServiceServer SurvivorSenService = n.advertiseService("survivor_sensor", survivorSensor);
 	ros::ServiceServer updateGridService = n.advertiseService("update_grid", updateGrid);
 	ros::spin();
 	return 0;
