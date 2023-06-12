@@ -29,8 +29,8 @@
 #undef HOSTILE_COUNT
 
 // redef everything
-#define BOARD_H 5
-#define BOARD_W 10
+#define BOARD_H 4
+#define BOARD_W 4
 
 #define SUB_CAP 2
 #define SURVIVOR_COUNT 5

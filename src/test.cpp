@@ -492,9 +492,9 @@ int main(int argc, char *argv[])
 			}
 			else
 			{ // still people left to be saved
-				// we know where people are
 				ROS_INFO("We've run out of moves, but there's still people left to be saved!");
 				std::cout << "survivors seen: " << survivors_seen << " saved: " << survivors_saved << " onBoard: " << OnBoard << std::endl;
+				// we know where people are
 				if (survivors_seen > (survivors_saved + OnBoard))
 				{
 					// need a strategy to save those people
