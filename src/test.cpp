@@ -555,7 +555,6 @@ void execute_move(int (&current_world)[BOARD_H][BOARD_W], int (&true_world)[BOAR
 std_msgs::Int32MultiArray createTempGrid(int (&true_world)[BOARD_H][BOARD_W])
 {
     std_msgs::Int32MultiArray temp_grid;
-
     temp_grid.layout.dim.push_back(std_msgs::MultiArrayDimension());
     temp_grid.layout.dim.push_back(std_msgs::MultiArrayDimension());
     temp_grid.layout.dim[0].label = "height";
@@ -565,7 +564,6 @@ std_msgs::Int32MultiArray createTempGrid(int (&true_world)[BOARD_H][BOARD_W])
     temp_grid.layout.dim[0].stride = BOARD_H * BOARD_W;
     temp_grid.layout.dim[1].stride = BOARD_W;
     temp_grid.layout.data_offset = 0;
-
     std::vector<int> vec(BOARD_W * BOARD_H, 0);
     for (int i = 0; i < BOARD_H; i++)
     {
@@ -575,6 +573,5 @@ std_msgs::Int32MultiArray createTempGrid(int (&true_world)[BOARD_H][BOARD_W])
         }
     }
     temp_grid.data = vec;
-
     return temp_grid;
 }
