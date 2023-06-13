@@ -14,14 +14,9 @@
 #include <utility>
 
 #define SubIsHome(sub_x, sub_y) (sub_x == SUB_START_X && sub_y == SUB_START_Y)
-
 #define SURVEY_AREA 0
 #define COLLECT_SURVIVORS 1
 #define GO_HOME 2
-
-// ros::ServiceClient sensorClient;
-std::string homeDir = getenv("HOME");
-
 #define PAT_EXE_DIR homeDir + "/Desktop/MONO-PAT-v3.6.0/PAT3.Console.exe"
 #define PAT_PATH_CSP_EXPLORE_DIR homeDir + "/catkin_ws/src/3806ict_assignment_3/pat/explore.csp"
 #define PAT_PATH_CSP_HOME_DIR homeDir + "/catkin_ws/src/3806ict_assignment_3/pat/return_home.csp"
@@ -30,6 +25,215 @@ std::string homeDir = getenv("HOME");
 std::string PAT_CMD_EXPLORE = "mono " + PAT_EXE_DIR + " " + PAT_PATH_CSP_EXPLORE_DIR + " " + PAT_OUTPUT_DIR;
 std::string PAT_CMD_GO_HOME = "mono " + PAT_EXE_DIR + " -engine 1 " + PAT_PATH_CSP_HOME_DIR + " " + PAT_OUTPUT_DIR;
 std::string PAT_CMD_COLLECT_SURVIVORS = "mono " + PAT_EXE_DIR + " -engine 1 " + PAT_PATH_CSP_COLLECT_SURVIVORS_DIR + " " + PAT_OUTPUT_DIR;
+std::string homeDir = getenv("HOME");
+
+void detect_hostiles(assignment_3::Sensor &hostile_srv, int (&curr_world)[BOARD_H][BOARD_W], int &sub_x, int &sub_y);
+int detect_survivors(assignment_3::Sensor &survivor_srv, int (&curr_world)[BOARD_H][BOARD_W], int &sub_x, int &sub_y);
+void update_true_world(int old_x, int old_y, std::pair<int, int> new_coords, int (&true_world)[BOARD_H][BOARD_W]);
+std::pair<int, int> update_position(std::string &move, int &x, int &y);
+void update_directions(std::queue<std::string> &q);
+void test_generate_world(int (&world)[BOARD_H][BOARD_W]);
+void generate_world(int (&world)[BOARD_H][BOARD_W], int num_survivors, int num_hostiles);
+void generate_known_world(int (&world)[BOARD_H][BOARD_W], int &sub_x, int &sub_y, int &onBoard);
+std::vector<int> translate_world(int (&true_world)[BOARD_H][BOARD_W]);
+void regenerate_moves(int (&current_world)[BOARD_H][BOARD_W], int &sub_x, int &sub_y, int &onBoard, std::queue<std::string> &q, int &currentPath);
+void execute_move(int (&current_world)[BOARD_H][BOARD_W], int (&true_world)[BOARD_H][BOARD_W], int &sub_x, int &sub_y, std::pair<int, int> &new_coords);
+std_msgs::Int32MultiArray createTempGrid(int (&true_world)[BOARD_H][BOARD_W]);
+
+int main(int argc, char *argv[])
+{
+	// init ros, services, and grid
+	ros::init(argc, argv, "testing");
+	ros::NodeHandle n;
+	ros::ServiceClient client = n.serviceClient<assignment_3::UpdateGrid>("/update_grid");
+	ros::ServiceClient hostileSensorClient = n.serviceClient<assignment_3::Sensor>("/hostile_sensor");
+	ros::ServiceClient survivorSensorClient = n.serviceClient<assignment_3::Sensor>("/survivor_sensor");
+	assignment_3::UpdateGrid srv;
+	assignment_3::Sensor hostile_srv;
+	assignment_3::Sensor survivor_srv;
+	std_msgs::Int32MultiArray temp_grid;
+
+	int survivors_saved = 0;
+	int survivors_seen = 0;
+	int true_world[BOARD_H][BOARD_W];
+	int current_world[BOARD_H][BOARD_W];
+	// initialise current_world to 0
+	for (int i = 0; i < BOARD_H; i++)
+		for (int j = 0; j < BOARD_W; j++)
+			current_world[i][j] = 0;
+	current_world[SUB_START_X][SUB_START_Y] = VISITED;
+	int sub_x = SUB_START_X;
+	int sub_y = SUB_START_Y;
+	int OnBoard = 0;
+	int currentPath = SURVEY_AREA;
+	// generate_world(true_world, SURVIVOR_COUNT, HOSTILE_COUNT);
+	test_generate_world(true_world);
+
+	// transfer the data from int array to std_msgs::Int32MultiArray to be sent via service
+	temp_grid = createTempGrid(true_world);
+	srv.request.grid = temp_grid;
+
+	if (!client.call(srv))
+	{
+		return EXIT_FAILURE;
+	}
+
+	std::queue<std::string> q;
+	hostile_srv.request.sensorRange = HOSTILE_DETECTION_RANGE;
+	survivor_srv.request.sensorRange = SURVIVOR_DETECTION_RANGE;
+	// extract information from sensors at starting position
+	if (!hostileSensorClient.call(hostile_srv) || !survivorSensorClient.call(survivor_srv))
+	{
+		ROS_ERROR("Failed to call sensor services");
+		return EXIT_FAILURE;
+	}
+
+	// update our current world with any detected hostiles or survivors
+	detect_hostiles(hostile_srv, current_world, sub_x, sub_y);
+	int newSurvivorsDetected = detect_survivors(survivor_srv, current_world, sub_x, sub_y);
+
+	if (newSurvivorsDetected)
+	{
+		// detected a survivor, change our planning to pick them up ASAP
+		ROS_INFO("New survivor detected!!");
+		survivors_seen++;
+		currentPath = COLLECT_SURVIVORS;
+	}
+
+	regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
+
+	std::string next_move;
+	ros::Rate rate(1);
+
+	while (true)
+	{
+		ROS_INFO("-- Start of cycle --");
+
+		if (SubIsHome(sub_x, sub_y) && OnBoard)
+		{
+			// drop off any survivors
+			survivors_saved += OnBoard;
+			std::cout << "Saved " << OnBoard << " survivors. Total survivors now saved: " << survivors_saved << std::endl;
+			OnBoard = 0;
+		}
+		// get next direction
+		if (q.empty())
+		{
+			// have we collected all survivors?
+			if ((survivors_saved + OnBoard) == SURVIVOR_COUNT)
+			{
+				if (SubIsHome(sub_x, sub_y))
+				{
+					ROS_INFO("Successfully visited all positions within search area!\nFinal internal representation of environment:");
+					for (int i = 0; i < BOARD_H; i++)
+					{
+						for (int j = 0; j < BOARD_W; j++)
+						{
+							if (current_world[i][j] != VISITED)
+								std::cout << " ";
+							std::cout << current_world[i][j] << " ";
+						}
+						std::cout << std::endl;
+					}
+					return EXIT_SUCCESS;
+				}
+				else
+				{ // saved all survivors, but not home yet..
+					currentPath = GO_HOME;
+					regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
+				}
+			}
+			else
+			{ // still people left to be saved
+				ROS_INFO("We've run out of moves, but there's still people left to be saved!");
+				std::cout << "survivors seen: " << survivors_seen << " saved: " << survivors_saved << " onBoard: " << OnBoard << std::endl;
+				// we know where people are
+				if (survivors_seen > (survivors_saved + OnBoard))
+				{
+					// need a strategy to save those people
+					currentPath = COLLECT_SURVIVORS;
+					regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
+				}
+				else // we have no idea where the survivors are, need to explore
+				{
+					currentPath = SURVEY_AREA;
+					regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
+				}
+			}
+		}
+		next_move = std::string(q.front());
+		// remove direction from queue
+		q.pop();
+		ROS_INFO("Next move is: %s", next_move.c_str());
+
+		// generate new coordinates from move
+		std::pair<int, int> new_coords = update_position(next_move, sub_x, sub_y);
+		int new_x = new_coords.first;
+		int new_y = new_coords.second;
+
+		// checking all conditions which would prevent us from being able to move
+		// check if we're about to collide with a hostile/obstacle
+		if (current_world[new_x][new_y] == HOSTILE)
+		{
+			ROS_INFO("About to move into hostile, recalculating PAT directions");
+			// need directions which follow our current path, but avoids the hostile
+			regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
+			rate.sleep();
+			continue;
+		}
+
+		// if we're going to move into a survivor, it *should* have been correctly planned
+		// so we are assuming that we are safe to pick them up
+		if (current_world[new_x][new_y] == SURVIVOR)
+		{
+			ROS_INFO("About to pick up a survivor :) Hooray!");
+			OnBoard++;
+			std::cout << "Now have " << OnBoard << " survivors onboard" << std::endl;
+		}
+
+		// changing representations
+		execute_move(current_world, true_world, sub_x, sub_y, new_coords);
+
+		// pushing the changes to gazebo
+		// translate world to vector for multiarray
+		temp_grid.data = translate_world(true_world);
+		srv.request.grid = temp_grid;
+		// call update_grid service
+		if (!client.call(srv))
+			ROS_ERROR("Failed to call service updateGrid");
+
+		// now we are at the new position in gazebo!!
+		sub_x = new_x;
+		sub_y = new_y;
+
+		// call the sensors and extract information
+		if (!hostileSensorClient.call(hostile_srv) || !survivorSensorClient.call(survivor_srv))
+		{
+			ROS_ERROR("Failed to call sensor services");
+			return EXIT_FAILURE;
+		}
+
+		// observe information and make decisions
+		// update our current world with detected hostiles or survivors
+		detect_hostiles(hostile_srv, current_world, sub_x, sub_y);
+		newSurvivorsDetected = detect_survivors(survivor_srv, current_world, sub_x, sub_y);
+
+		if (newSurvivorsDetected)
+		{
+			// detected a survivor, change our planning to pick them up ASAP
+			std::cout << "Info from bot: " << newSurvivorsDetected << " new survivors detected" << std::endl;
+			survivors_seen += newSurvivorsDetected;
+			currentPath = COLLECT_SURVIVORS;
+			regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
+		}
+
+		ROS_INFO("-- End of cycle --\n");
+
+		rate.sleep();
+	}
+
+	ros::spin();
+}
 
 void detect_hostiles(assignment_3::Sensor &hostile_srv, int (&curr_world)[BOARD_H][BOARD_W], int &sub_x, int &sub_y)
 {
@@ -348,282 +552,29 @@ void execute_move(int (&current_world)[BOARD_H][BOARD_W], int (&true_world)[BOAR
 	true_world[new_x][new_y] = SUB;
 }
 
-int main(int argc, char *argv[])
+std_msgs::Int32MultiArray createTempGrid(int (&true_world)[BOARD_H][BOARD_W])
 {
-	// init ros
-	ros::init(argc, argv, "testing");
-	ros::NodeHandle n;
+    std_msgs::Int32MultiArray temp_grid;
 
-	// create client
-	ros::ServiceClient client = n.serviceClient<assignment_3::UpdateGrid>("/update_grid");
-	ros::ServiceClient hostileSensorClient = n.serviceClient<assignment_3::Sensor>("/hostile_sensor");
-	ros::ServiceClient survivorSensorClient = n.serviceClient<assignment_3::Sensor>("/survivor_sensor");
-	assignment_3::UpdateGrid srv;
-	assignment_3::Sensor hostile_srv;
-	assignment_3::Sensor survivor_srv;
+    temp_grid.layout.dim.push_back(std_msgs::MultiArrayDimension());
+    temp_grid.layout.dim.push_back(std_msgs::MultiArrayDimension());
+    temp_grid.layout.dim[0].label = "height";
+    temp_grid.layout.dim[1].label = "width";
+    temp_grid.layout.dim[0].size = BOARD_H;
+    temp_grid.layout.dim[1].size = BOARD_W;
+    temp_grid.layout.dim[0].stride = BOARD_H * BOARD_W;
+    temp_grid.layout.dim[1].stride = BOARD_W;
+    temp_grid.layout.data_offset = 0;
 
-	std_msgs::Int32MultiArray temp_grid;
+    std::vector<int> vec(BOARD_W * BOARD_H, 0);
+    for (int i = 0; i < BOARD_H; i++)
+    {
+        for (int j = 0; j < BOARD_W; j++)
+        {
+            vec[i * BOARD_W + j] = true_world[i][j];
+        }
+    }
+    temp_grid.data = vec;
 
-	int survivors_saved = 0;
-	int survivors_seen = 0;
-
-	int true_world[BOARD_H][BOARD_W];
-	int current_world[BOARD_H][BOARD_W];
-	// initialise all to 0
-	for (int i = 0; i < BOARD_H; i++)
-		for (int j = 0; j < BOARD_W; j++)
-			current_world[i][j] = 0;
-	current_world[SUB_START_X][SUB_START_Y] = VISITED;
-	int sub_x = SUB_START_X;
-	int sub_y = SUB_START_Y;
-	int OnBoard = 0;
-	int currentPath = SURVEY_AREA;
-	// generate_world(true_world, SURVIVOR_COUNT, HOSTILE_COUNT);
-	test_generate_world(true_world);
-
-	// int array[BOARD_H][BOARD_W] = {
-	//     {1, 2, 3, 0, 0, 0},
-	//     {0, 0, 0, 0, 0, 0},
-	//     {0, 0, 0, 0, 2, 0},
-	//     {0, 0, 0, 0, 0, 0},
-	//     {0, 0, 0, 0, 0, 0},
-	//     {0, 2, 0, 0, 0, 0},
-	// };
-
-	// transfer the data from int array to std_msgs::Int32MultiArray to be sent via service
-	// not real sure what to comment here apart from this, Jimbo did you have more to add?
-	temp_grid.layout.dim.push_back(std_msgs::MultiArrayDimension());
-	temp_grid.layout.dim.push_back(std_msgs::MultiArrayDimension());
-	temp_grid.layout.dim[0].label = "height";
-	temp_grid.layout.dim[1].label = "width";
-	temp_grid.layout.dim[0].size = BOARD_H;
-	temp_grid.layout.dim[1].size = BOARD_W;
-	temp_grid.layout.dim[0].stride = BOARD_H * BOARD_W;
-	temp_grid.layout.dim[1].stride = BOARD_W;
-	temp_grid.layout.data_offset = 0;
-	std::vector<int> vec(BOARD_W * BOARD_H, 0);
-	for (int i = 0; i < BOARD_H; i++)
-		for (int j = 0; j < BOARD_W; j++)
-			vec[i * BOARD_W + j] = true_world[i][j];
-	temp_grid.data = vec;
-	srv.request.grid = temp_grid;
-
-	// std_msgs::String row;
-	// row.data = "OOSOOS";
-
-	// for(int i = 0; i < 6; i ++){
-	//     srv.request.grid.push_back(row);
-	// }
-
-	if (!client.call(srv))
-	{
-		return EXIT_FAILURE;
-	}
-
-	std::queue<std::string> q;
-
-	hostile_srv.request.sensorRange = HOSTILE_DETECTION_RANGE;
-	survivor_srv.request.sensorRange = SURVIVOR_DETECTION_RANGE;
-	// extract information from sensors at our starting position
-	// in case there is anything to be seen from home?
-	// call the sensors and extract information
-	if (!hostileSensorClient.call(hostile_srv) || !survivorSensorClient.call(survivor_srv))
-	{
-		ROS_ERROR("Failed to call sensor services");
-		return EXIT_FAILURE;
-	}
-
-	// observe information and make decisions
-	// update our current world with any detected hostiles
-	// update our current world with any detected survivors
-	detect_hostiles(hostile_srv, current_world, sub_x, sub_y);
-	int newSurvivorsDetected = detect_survivors(survivor_srv, current_world, sub_x, sub_y);
-
-	if (newSurvivorsDetected)
-	{
-		// detected a survivor, change our planning to pick them up ASAP
-		ROS_INFO("New survivor detected!!");
-		survivors_seen++;
-		currentPath = COLLECT_SURVIVORS;
-	}
-
-	regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
-
-	std::string next_move;
-	ros::Rate rate(1);
-
-	while (true)
-	{
-		ROS_INFO("-- Start of cycle --");
-
-		if (SubIsHome(sub_x, sub_y) && OnBoard)
-		{
-			// drop off any survivors
-			survivors_saved += OnBoard;
-			std::cout << "Saved " << OnBoard << " survivors. Total survivors now saved: " << survivors_saved << std::endl;
-			OnBoard = 0;
-		}
-		// get next direction
-		if (q.empty())
-		{
-			// have we collected all survivors?
-			if ((survivors_saved + OnBoard) == SURVIVOR_COUNT)
-			{
-				if (SubIsHome(sub_x, sub_y))
-				{
-					ROS_INFO("Successfully visited all positions within search area!\nFinal internal representation of environment:");
-					for (int i = 0; i < BOARD_H; i++)
-					{
-						for (int j = 0; j < BOARD_W; j++)
-						{
-							if (current_world[i][j] != VISITED)
-								std::cout << " ";
-							std::cout << current_world[i][j] << " ";
-						}
-						std::cout << std::endl;
-					}
-					return EXIT_SUCCESS;
-				}
-				else
-				{ // saved all survivors, but not home yet..
-					currentPath = GO_HOME;
-					regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
-				}
-			}
-			else
-			{ // still people left to be saved
-				ROS_INFO("We've run out of moves, but there's still people left to be saved!");
-				std::cout << "survivors seen: " << survivors_seen << " saved: " << survivors_saved << " onBoard: " << OnBoard << std::endl;
-				// we know where people are
-				if (survivors_seen > (survivors_saved + OnBoard))
-				{
-					// need a strategy to save those people
-					currentPath = COLLECT_SURVIVORS;
-					regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
-				}
-				else // we have no idea where the survivors are, need to explore
-				{
-					currentPath = SURVEY_AREA;
-					regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
-				}
-			}
-		}
-		next_move = std::string(q.front());
-		// remove direction from queue
-		q.pop();
-		ROS_INFO("Next move is: %s", next_move.c_str());
-
-		// generate new coordinates from move
-		std::pair<int, int> new_coords = update_position(next_move, sub_x, sub_y);
-		int new_x = new_coords.first;
-		int new_y = new_coords.second;
-
-		// checking all conditions which would prevent us from being able to move
-		// check if we're about to collide with a hostile/obstacle
-		if (current_world[new_x][new_y] == HOSTILE)
-		{
-			ROS_INFO("About to move into hostile, recalculating PAT directions");
-			// need directions which follow our current path, but avoids the hostile
-			regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
-			rate.sleep();
-			continue;
-		}
-
-		// if we're going to move into a survivor, it *should* have been correctly planned
-		// so we are assuming that we are safe to pick them up
-		if (current_world[new_x][new_y] == SURVIVOR)
-		{
-			ROS_INFO("About to pick up a survivor :) Hooray!");
-			OnBoard++;
-			std::cout << "Now have " << OnBoard << " survivors onboard" << std::endl;
-		}
-
-		// extract information from sensors
-		// get move
-		// check blocking conditions for executing move
-		// execute move
-		// changing internal representation (so that we keep track of where we think we are & for pat)
-		// old pos = visited
-		// new pos = sub
-		// changing true representation (so that we can simulate the move in gazebo)
-		// old pos = visited
-		// new pos = sub
-		// get information from sensors
-		// update our understanding from information
-
-		/* what if there's an obstacle blocking us from the very first move?? */
-
-		// new position won't be intersecting a hostile, so we can move
-		// sensor_srv.request.newSubXIndex = new_x;
-		// sensor_srv.request.newSubYIndex = new_y;
-
-		// changing representations
-		execute_move(current_world, true_world, sub_x, sub_y, new_coords);
-
-		// pushing the changes to gazebo
-		// translate world to vector for multiarray
-		temp_grid.data = translate_world(true_world);
-		srv.request.grid = temp_grid;
-		// call update_grid service
-		if (!client.call(srv))
-			ROS_ERROR("Failed to call service updateGrid");
-
-		// now we are at the new position in gazebo!!
-		sub_x = new_x;
-		sub_y = new_y;
-
-		// now we need the sensor information
-
-		// call the sensors and extract information
-		if (!hostileSensorClient.call(hostile_srv) || !survivorSensorClient.call(survivor_srv))
-		{
-			ROS_ERROR("Failed to call sensor services");
-			return EXIT_FAILURE;
-		}
-
-		// observe information and make decisions
-		// update our current world with any detected hostiles
-		// update our current world with any detected survivors
-		detect_hostiles(hostile_srv, current_world, sub_x, sub_y);
-		newSurvivorsDetected = detect_survivors(survivor_srv, current_world, sub_x, sub_y);
-
-		if (newSurvivorsDetected)
-		{
-			// detected a survivor, change our planning to pick them up ASAP
-			std::cout << "Info from bot: " << newSurvivorsDetected << " new survivors detected" << std::endl;
-			survivors_seen += newSurvivorsDetected;
-			currentPath = COLLECT_SURVIVORS;
-			regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
-		}
-
-		ROS_INFO("-- End of cycle --\n");
-
-		rate.sleep();
-	}
-
-	/*
-	int new_col = current_col + move_col;
-	int new_row = current_row + move_row;
-	new_world[new_row][new_col] = VISITED;
-
-	// need sensor data somehow
-	assignment_3::sensorReadings srv;
-	// supply srv.req with x and y coordinates of new sub location and sensor length
-
-	// calll sensor service
-	if (!sensorClient.call(srv))
-	{
-		ROS_ERROR("Failed to call service sensorReadings");
-	}
-
-	// call sensorReadings and save data
-	bool bombNorth;
-	bool bombSouth;
-	bool bombEast;
-	bool bombWest;
-	bool survivorDetected;
-	bool survivorsCollected;
-	*/
-
-	ros::spin();
+    return temp_grid;
 }

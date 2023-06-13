@@ -6,17 +6,16 @@
 
 #define SUB_HOME_X 0;
 #define SUB_HOME_Y 0;
-#define Rows 5;
-#define Cols 10;
-#define Fuel 50;
+#define Rows 4;
+#define Cols 4;
+#define Fuel 16;
 #define maxCapacity 2;
 
 var world[Rows][Cols]:{Visited..Survivor} = [
--1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 
--1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 
-0, -1, -1, -1, 0, 0, 0, 0, 0, 0, 
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+-1, 2, 0, 0, 
+-1, -1, -1, -1, 
+0, -1, -1, -1, 
+0, 0, 0, 0
 ];
 
 // Position of sub
