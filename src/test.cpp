@@ -17,6 +17,7 @@
 #define SURVEY_AREA 0
 #define COLLECT_SURVIVORS 1
 #define GO_HOME 2
+std::string homeDir = getenv("HOME");
 #define PAT_EXE_DIR homeDir + "/Desktop/MONO-PAT-v3.6.0/PAT3.Console.exe"
 #define PAT_PATH_CSP_EXPLORE_DIR homeDir + "/catkin_ws/src/3806ict_assignment_3/pat/explore.csp"
 #define PAT_PATH_CSP_HOME_DIR homeDir + "/catkin_ws/src/3806ict_assignment_3/pat/return_home.csp"
@@ -24,8 +25,8 @@
 #define PAT_OUTPUT_DIR homeDir + "/catkin_ws/src/3806ict_assignment_3/pat/output.txt"
 std::string PAT_CMD_EXPLORE = "mono " + PAT_EXE_DIR + " " + PAT_PATH_CSP_EXPLORE_DIR + " " + PAT_OUTPUT_DIR;
 std::string PAT_CMD_GO_HOME = "mono " + PAT_EXE_DIR + " -engine 1 " + PAT_PATH_CSP_HOME_DIR + " " + PAT_OUTPUT_DIR;
-std::string PAT_CMD_COLLECT_SURVIVORS = "mono " + PAT_EXE_DIR + " -engine 1 " + PAT_PATH_CSP_COLLECT_SURVIVORS_DIR + " " + PAT_OUTPUT_DIR;
-std::string homeDir = getenv("HOME");
+std::string PAT_CMD_COLLECT_SURVIVORS = "timeout 10s mono " + PAT_EXE_DIR + " -engine 1 " + PAT_PATH_CSP_COLLECT_SURVIVORS_DIR + " " + PAT_OUTPUT_DIR;
+std::string PAT_CMD_COLLECT_SURVIVORS_DFS = "timeout 10s mono " + PAT_EXE_DIR + " " + PAT_PATH_CSP_COLLECT_SURVIVORS_DIR + " " + PAT_OUTPUT_DIR;
 
 void detect_hostiles(assignment_3::Sensor &hostile_srv, int (&curr_world)[BOARD_H][BOARD_W], int &sub_x, int &sub_y);
 int detect_survivors(assignment_3::Sensor &survivor_srv, int (&curr_world)[BOARD_H][BOARD_W], int &sub_x, int &sub_y);
@@ -66,8 +67,8 @@ int main(int argc, char *argv[])
 	int sub_y = SUB_START_Y;
 	int OnBoard = 0;
 	int currentPath = SURVEY_AREA;
-	// generate_world(true_world, SURVIVOR_COUNT, HOSTILE_COUNT);
-	test_generate_world(true_world);
+	generate_world(true_world, SURVIVOR_COUNT, HOSTILE_COUNT);
+	// test_generate_world(true_world);
 
 	// transfer the data from int array to std_msgs::Int32MultiArray to be sent via service
 	temp_grid = createTempGrid(true_world);
@@ -103,7 +104,7 @@ int main(int argc, char *argv[])
 	regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
 
 	std::string next_move;
-	ros::Rate rate(1);
+	ros::Rate rate(5);
 
 	while (true)
 	{
@@ -386,11 +387,32 @@ void update_directions(std::queue<std::string> &q)
 void test_generate_world(int (&world)[BOARD_H][BOARD_W])
 {
 
-	/*
-	0, 2, 0, 0
-	0, 0, 3, 3
-	0, 3, 3, 3
-	0, 0, 0, 0
+	/* 4 surv, 6 host
+		0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19
+		----------------------------- -----------------------------
+	0 | 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  1, 0, 0, 0, 0, -, 0, 0, 0, 0
+	1 | 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	2 | 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	3 | 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	4 | 0, -, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	5 | 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	6 | 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	7 | 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	8 | 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+
+	9 | 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+
+	10| 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	11| 0, 0, 0, 0, 0, 0, 0, 0, 0, -, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	12| 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	13| -, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	14| 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	15| 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -, 0, 0, 0
+	16| 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	17| 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	18| 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	19| 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -, 1
+
 	*/
 	// init world with EMPTY
 	for (int i = 0; i < BOARD_H; ++i)
@@ -400,12 +422,19 @@ void test_generate_world(int (&world)[BOARD_H][BOARD_W])
 	// place sub in top right corner (origin)
 	world[SUB_START_X][SUB_START_Y] = SUB;
 
-	world[0][1] = HOSTILE;
-	world[1][2] = SURVIVOR;
-	world[1][3] = SURVIVOR;
-	world[2][1] = SURVIVOR;
-	world[2][2] = SURVIVOR;
-	world[2][3] = SURVIVOR;
+	// world[0][1] = HOSTILE;
+	// world[1][1] = HOSTILE;
+	// world[2][1] = HOSTILE;
+	// world[3][1] = HOSTILE;
+	// world[4][1] = HOSTILE;
+	// world[5][1] = HOSTILE;
+	world[0][12] = SURVIVOR;
+	world[12][12] = SURVIVOR;
+	world[11][12] = SURVIVOR;
+	// world[1][3] = SURVIVOR;
+	// world[2][1] = SURVIVOR;
+	// world[2][2] = SURVIVOR;
+	// world[2][3] = SURVIVOR;
 }
 
 void generate_world(int (&world)[BOARD_H][BOARD_W], int num_survivors, int num_hostiles)
@@ -523,7 +552,28 @@ void regenerate_moves(int (&current_world)[BOARD_H][BOARD_W], int &sub_x, int &s
 	else if (currentPath == COLLECT_SURVIVORS)
 	{
 		ROS_INFO("Calculating a path to collect remaining survivors");
-		std::system(PAT_CMD_COLLECT_SURVIVORS.c_str());
+		int status = std::system(PAT_CMD_COLLECT_SURVIVORS.c_str());
+		if (status < 0)
+		{
+			std::cout << "Error: " << strerror(errno) << '\n';
+			exit(1);
+		}
+		else
+		{
+			if (WIFEXITED(status))
+			{
+				if (WEXITSTATUS(status) == 124)
+				{
+					// do alternate option
+					std::system(PAT_CMD_COLLECT_SURVIVORS_DFS.c_str());
+				}
+				std::cout << "Program returned normally, exit code " << WEXITSTATUS(status) << '\n';
+			}
+			else
+			{
+				std::cout << "Program exited abnormaly\n";
+			}
+		}
 	}
 	else if (currentPath == GO_HOME)
 	{
@@ -554,24 +604,24 @@ void execute_move(int (&current_world)[BOARD_H][BOARD_W], int (&true_world)[BOAR
 
 std_msgs::Int32MultiArray createTempGrid(int (&true_world)[BOARD_H][BOARD_W])
 {
-    std_msgs::Int32MultiArray temp_grid;
-    temp_grid.layout.dim.push_back(std_msgs::MultiArrayDimension());
-    temp_grid.layout.dim.push_back(std_msgs::MultiArrayDimension());
-    temp_grid.layout.dim[0].label = "height";
-    temp_grid.layout.dim[1].label = "width";
-    temp_grid.layout.dim[0].size = BOARD_H;
-    temp_grid.layout.dim[1].size = BOARD_W;
-    temp_grid.layout.dim[0].stride = BOARD_H * BOARD_W;
-    temp_grid.layout.dim[1].stride = BOARD_W;
-    temp_grid.layout.data_offset = 0;
-    std::vector<int> vec(BOARD_W * BOARD_H, 0);
-    for (int i = 0; i < BOARD_H; i++)
-    {
-        for (int j = 0; j < BOARD_W; j++)
-        {
-            vec[i * BOARD_W + j] = true_world[i][j];
-        }
-    }
-    temp_grid.data = vec;
-    return temp_grid;
+	std_msgs::Int32MultiArray temp_grid;
+	temp_grid.layout.dim.push_back(std_msgs::MultiArrayDimension());
+	temp_grid.layout.dim.push_back(std_msgs::MultiArrayDimension());
+	temp_grid.layout.dim[0].label = "height";
+	temp_grid.layout.dim[1].label = "width";
+	temp_grid.layout.dim[0].size = BOARD_H;
+	temp_grid.layout.dim[1].size = BOARD_W;
+	temp_grid.layout.dim[0].stride = BOARD_H * BOARD_W;
+	temp_grid.layout.dim[1].stride = BOARD_W;
+	temp_grid.layout.data_offset = 0;
+	std::vector<int> vec(BOARD_W * BOARD_H, 0);
+	for (int i = 0; i < BOARD_H; i++)
+	{
+		for (int j = 0; j < BOARD_W; j++)
+		{
+			vec[i * BOARD_W + j] = true_world[i][j];
+		}
+	}
+	temp_grid.data = vec;
+	return temp_grid;
 }
