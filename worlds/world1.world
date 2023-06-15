@@ -26,7 +26,7 @@
 
     <gui>
       <camera name="user_camera">
-        <pose>6 6 30 0 1.5707 3.1416</pose> <!-- offset 3 units on x and y, 10 units above origin, looking straight down -->
+        <pose>6 6 30 0 1.5707 3.1416</pose> <!-- offset 6 units on x and y, 30 units above origin, looking straight down -->
         <view_controller>orbit</view_controller>
       </camera>
     </gui>
