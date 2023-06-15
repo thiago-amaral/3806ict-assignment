@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 		// detected a survivor, change our planning to pick them up ASAP
 		ROS_INFO("New survivor detected!!");
 		survivors_seen++;
-		currentPath = COLLECT_SURVIVORS;
+		currentPath = COLLECT_SURVIVORS; // in the case we are on the way to a survivor already we generate a new survivor path.
 	}
 
 	regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
