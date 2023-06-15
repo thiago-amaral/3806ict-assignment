@@ -215,7 +215,7 @@ add_executable(updateGrid src/updateGrid.cpp)
 target_link_libraries(updateGrid ${catkin_LIBRARIES})
 add_dependencies(updateGrid ${catkin_EXPORTED_TARGETS})
 
-add_executable(testing src/test.cpp)
+add_executable(search_rescue src/search_rescue.cpp)
 target_link_libraries(testing ${catkin_LIBRARIES})
 add_dependencies(testing ${catkin_EXPORTED_TARGETS})
 
