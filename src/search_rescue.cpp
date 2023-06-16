@@ -13,7 +13,7 @@
 #include <string>
 #include <utility>
 
-#define GAZEBO_SIMULATION_RATE 5 // how many moves per second will that will be processed/simulated
+#define GAZEBO_SIMULATION_RATE 3 // how many moves per second will that will be processed/simulated
 
 // boolean expects sub_x and sub_y to determine if sub is at home position
 #define SubIsHome(sub_x, sub_y) (sub_x == SUB_START_X && sub_y == SUB_START_Y)
