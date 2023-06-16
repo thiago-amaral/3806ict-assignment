@@ -489,7 +489,7 @@ void generate_known_world(int (&world)[BOARD_H][BOARD_W], int &sub_x, int &sub_y
 	ROS_INFO("Writing robot's current interpretation to world file.");
 
 	// write defines
-	file << "#define Visited " << VISITED >> ";\n";
+	file << "#define Visited " << VISITED << ";\n";
 	file << "#define Unvisited " << EMPTY << ";\n";
 	file << "#define Sub " << SUB << ";\n";
 	file << "#define Hostile " << HOSTILE << ";\n";
