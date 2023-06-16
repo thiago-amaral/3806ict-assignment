@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 	generate_world(true_world);
 
 	// transfer the data from int array to std_msgs::Int32MultiArray to be sent via service
-	true_grid = createTempGrid(true_world);
+	true_grid = createGrid(true_world);
 	grid_srv.request.grid = true_grid;
 
 	// send the true world to be modelled by gazebo
