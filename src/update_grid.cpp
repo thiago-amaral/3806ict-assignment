@@ -147,7 +147,7 @@ gazebo_msgs::SpawnModel createSpawnRequest(int modelType, geometry_msgs::Point p
 		// the turtlebot burger from turtlebot_sim package is used to model the submarine
 		spawn.request.model_name = "submarine";
 		// create path to sdf model in repository
-		modelPath = homeDir + "turtlebot3_burger/model.sdf";
+		modelPath = modelDir + "turtlebot3_burger/model.sdf";
 	}
 
 	// open the file containing the sdf model
