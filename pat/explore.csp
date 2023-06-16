@@ -1,3 +1,3 @@
 #include "path.csp";
 
-#assert BestMove() reaches goalAreaChecked;
+#assert UnvisitedMove() reaches goalAreaChecked;

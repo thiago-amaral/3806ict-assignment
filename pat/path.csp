@@ -63,8 +63,8 @@ MoveRightIfNotVisited() = [MoveRightCond && MoveRightCondNotVisited] moveRight{y
 
 MoveIfNotVisited() = MoveUpIfNotVisited() [] MoveDownIfNotVisited() [] MoveLeftIfNotVisited() [] MoveRightIfNotVisited();
 MoveIfVisited() = MoveUpIfVisited() [] MoveDownIfVisited() [] MoveLeftIfVisited() [] MoveRightIfVisited();
-BestMove() = (MoveIfVisited() [] MoveIfNotVisited());BestMove();
-WorstMove() = (MoveIfNotVisited() [] MoveIfVisited());WorstMove();
+UnvisitedMove() = (MoveIfVisited() [] MoveIfNotVisited());UnvisitedMove();
+VisitedMove() = (MoveIfNotVisited() [] MoveIfVisited());VisitedMove();
 
 // primitive goal, sub has returned to its home position
 #define home (xpos == SUB_HOME_X && ypos == SUB_HOME_Y);
