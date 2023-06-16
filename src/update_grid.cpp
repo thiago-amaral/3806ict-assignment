@@ -154,7 +154,7 @@ gazebo_msgs::SpawnModel createSpawnRequest(int modelType, geometry_msgs::Point p
 	std::ifstream t(modelPath);
 	if (!t.is_open())
 	{
-		ROS_WARN("Could not open model file: %s", modelPath);
+		ROS_WARN("Could not open model file: %s", modelPath.c_str());
 		exit(1);
 	}
 	// read into string for the spawn request
