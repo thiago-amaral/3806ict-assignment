@@ -7,8 +7,8 @@
 #define SUB_START_X 0
 #define SUB_START_Y 0
 
-#define BOARD_H 15
-#define BOARD_W 15
+#define BOARD_H 8
+#define BOARD_W 8
 
 #define SUB_CAP 2
 #define SURVIVOR_COUNT 5
@@ -16,5 +16,3 @@
 
 #define HOSTILE_DETECTION_RANGE 2
 #define SURVIVOR_DETECTION_RANGE 1
-
-#define MAX_FUEL (BOARD_H * BOARD_W)
