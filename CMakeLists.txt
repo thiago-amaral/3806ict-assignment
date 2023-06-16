@@ -218,4 +218,3 @@ add_dependencies(updateGrid ${catkin_EXPORTED_TARGETS})
 add_executable(search_rescue src/search_rescue.cpp)
 target_link_libraries(search_rescue ${catkin_LIBRARIES})
 add_dependencies(search_rescue ${catkin_EXPORTED_TARGETS})
-
