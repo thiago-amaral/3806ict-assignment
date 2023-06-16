@@ -1,5 +1,9 @@
+# Sensor srv models request/response for sensors
+# expects a given range to look for objects
 int32 sensorRange
 ---
+# boolean responses allow for easy access to whether objects were detected
+# and in which direction
 bool objectNorth
 bool objectSouth
 bool objectEast

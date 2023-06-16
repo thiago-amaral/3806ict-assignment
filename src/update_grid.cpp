@@ -15,6 +15,9 @@
 #include "assignment_3/Sensor.h"
 #include "communal_defines.cpp"
 
+// width of each grid (currently set to 1m)
+#define GRID_WIDTH 1.0
+
 // ROS service client so sensors have access to bot position
 ros::ServiceClient bot_location;
 gazebo_msgs::GetModelState srv;
@@ -37,7 +40,7 @@ int numHostiles = 0;
 bool submarineSpawned = false;
 // home directory and model directory
 std::string homeDir = getenv("HOME");
-std::string modelDir = homeDir + "/.gazebo/models/";
+std::string modelDir = homeDir + "/catkin_ws/src/3806ict_assignment_3/models/";
 
 // comparison function for Point
 struct ComparePoints
@@ -52,35 +55,111 @@ struct ComparePoints
 	}
 };
 
-// Dictionary with coordinates as key and survivor/obstacle as value
+// Dictionary with coordinates as key and survivor/hostile as value
 std::map<geometry_msgs::Point, std::string, ComparePoints> objectPositions;
 
-// function which takes a model type and returns a spawn model request
+// -- function declarations --
+// takes a model type and returns a spawn model request (gazebo_msgs::SpawnModel)
+gazebo_msgs::SpawnModel createSpawnRequest(int modelType, geometry_msgs::Point position);
+// updates gazebo with the new positions of objects, spawns them if non-existent
+bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid::Response &res);
+// simulates something like a sonar sensor which detects objects. Can take variable sensorRange
+// and returns an array of detected objects, corresponding to the distance away from the bot's
+// current position in east, north, west, south. The bot's current position is taken from
+// gazebo get_model_state in an attempt to model a real sensor
+bool hostileSensor(assignment_3::Sensor::Request &req, assignment_3::Sensor::Response &res);
+// simulates something like a infrared sensor which detects objects. Can take variable sensorRange
+// and returns an array of detected objects, corresponding to the distance away from the bot's
+// current position in east, north, west, south. The bot's current position is taken from
+// gazebo get_model_state in an attempt to model a real sensor
+bool survivorSensor(assignment_3::Sensor::Request &req, assignment_3::Sensor::Response &res);
+
+// main
+int main(int argc, char **argv)
+{
+	// initialise the node
+	ros::init(argc, argv, "gazebo_object_manager");
+	ros::NodeHandle n;
+	// creating a client to the get_model_state service, so that the sensors have access to the bot's
+	// x, y coordinates at all times for emulation purposes (to try simulate actual sensors)
+	bot_location = n.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
+	// pretend we're a submarine :)
+	srv.request.model_name = "submarine";
+
+	// Initialize current grid to all empty squares
+	for (int i = 0; i < BOARD_H; ++i)
+		for (int j = 0; j < BOARD_W; ++j)
+			currentGrid[i][j] = EMPTY;
+
+	// Initialise coordinates
+	for (int i = 0; i < BOARD_H; ++i)
+		for (int j = 0; j < BOARD_W; ++j)
+		{
+			coordinates[i][j].x = i * GRID_WIDTH;
+			coordinates[i][j].y = j * GRID_WIDTH;
+			coordinates[i][j].z = 0;
+		}
+
+	// create client for set_model_state to update model states when moving objects
+	setClient = n.serviceClient<gazebo_msgs::SetModelState>("gazebo/set_model_state");
+	// create client for spawning models when generating the initial board
+	spawnClient = n.serviceClient<gazebo_msgs::SpawnModel>("gazebo/spawn_sdf_model");
+	// create client for deleting models when updating/moving objcets
+	deleteClient = n.serviceClient<gazebo_msgs::DeleteModel>("gazebo/delete_model");
+	// advertise the hostile sensor emulator for the robot to call when required
+	ros::ServiceServer HostileSenService = n.advertiseService("hostile_sensor", hostileSensor);
+	// advertise the survivor sensor emulator for the robot to call when required
+	ros::ServiceServer SurvivorSenService = n.advertiseService("survivor_sensor", survivorSensor);
+	// advertise the update_grid sensor emulator. This is responsible for updating gazebo
+	// with new locations of the objects
+	ros::ServiceServer updateGridService = n.advertiseService("update_grid", updateGrid);
+	ros::spin();
+	return 0;
+}
+
 gazebo_msgs::SpawnModel createSpawnRequest(int modelType, geometry_msgs::Point position)
 {
+	// initialise the message for the spawn_sdf_model service
 	gazebo_msgs::SpawnModel spawn;
 	std::string modelPath;
 	if (modelType == SURVIVOR)
 	{
-		// Create a unique name
-		spawn.request.model_name = "bowl" + std::to_string(numSurvivors); // bowl = survivor
+		// bowls are used to model survivors
+		// Create a unique name from numSurvivors (e.g. bowl0, bowl1)
+		spawn.request.model_name = "bowl" + std::to_string(numSurvivors);
+		// increment the number of survivors
 		numSurvivors++;
-		// Provide SDF or URDF
+		// create path to sdf model in repository
 		modelPath = modelDir + "bowl/model.sdf";
 	}
 	else if (modelType == HOSTILE)
 	{
+		// cardboard boxes are used to model hostiles
+		// Create a unique name from numHostiles (e.g. cardboard_box0, cardboard_box1)
 		spawn.request.model_name = "cardboard_box" + std::to_string(numHostiles); // box = hostile
+		// increment the number of hostiles
 		numHostiles++;
+		// create path to sdf model in repository
 		modelPath = modelDir + "cardboard_box/model.sdf";
 	}
 	else if (modelType == SUB)
 	{
-		spawn.request.model_name = "submarine"; // turtlebot = submarine
-		modelPath = homeDir + "/catkin_ws/src/turtlebot3_simulations/turtlebot3_gazebo/models/turtlebot3_burger/model.sdf";
+		// the turtlebot burger from turtlebot_sim package is used to model the submarine
+		spawn.request.model_name = "submarine";
+		// create path to sdf model in repository
+		modelPath = homeDir + "turtlebot3_burger/model.sdf";
 	}
+
+	// open the file containing the sdf model
 	std::ifstream t(modelPath);
+	if (!t.is_open())
+	{
+		ROS_WARN("Could not open model file: %s", modelPath);
+		exit(1);
+	}
+	// read into string for the spawn request
 	std::string modelXml((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+	t.close();
 	spawn.request.model_xml = modelXml;
 	spawn.request.initial_pose.position = position;
 	return spawn;
@@ -93,8 +172,9 @@ bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid
 	gazebo_msgs::SetModelState set;
 	gazebo_msgs::DeleteModel del;
 	gazebo_msgs::SpawnModel spawn;
+
+	// loop through all coordinates in board
 	for (int i = 0; i < BOARD_H; ++i)
-	{
 		for (int j = 0; j < BOARD_W; ++j)
 		{
 			int oldIndex = currentGrid[i][j];
@@ -104,6 +184,7 @@ bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid
 				// Get the corresponding coordinates
 				geometry_msgs::Point point = coordinates[i][j];
 
+				// was empty, now a survivor (only occurs in the initial generation)
 				if (oldIndex == EMPTY && newIndex == SURVIVOR)
 				{
 					// Spawn a "Survivor"
@@ -111,6 +192,8 @@ bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid
 					objectPositions[point] = spawn.request.model_name;
 					spawnClient.call(spawn);
 				}
+				// was a survivor, now the sub. must delete the survivor and replace
+				// with the sub
 				if (oldIndex == SURVIVOR && newIndex == SUB)
 				{
 					// Delete the "Survivor"
@@ -122,6 +205,7 @@ bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid
 					set.request.model_state.pose.position = point;
 					setClient.call(set);
 				}
+				// old position was empty, now a hostile, only occurs in spawn condition
 				if (oldIndex == EMPTY && newIndex == HOSTILE)
 				{
 					// Spawn a "Hostile"
@@ -129,6 +213,7 @@ bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid
 					objectPositions[point] = spawn.request.model_name;
 					spawnClient.call(spawn);
 				}
+				// old position was empty or visited, now it holds the sub, so move/spawn the sub
 				if ((oldIndex == EMPTY || oldIndex == VISITED) && newIndex == SUB)
 				{
 					if (submarineSpawned)
@@ -148,11 +233,10 @@ bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid
 						submarineSpawned = true;
 					}
 				}
-				// Update the lastGrid
+				// Update current grid
 				currentGrid[i][j] = newIndex;
 			}
 		}
-	}
 
 	// Return the updated grid
 	res.altered_grid = req.grid;
@@ -161,20 +245,24 @@ bool updateGrid(assignment_3::UpdateGrid::Request &req, assignment_3::UpdateGrid
 
 bool hostileSensor(assignment_3::Sensor::Request &req, assignment_3::Sensor::Response &res)
 {
-	// set all to false
+	// initialise all to false
 	res.objectNorth = false;
 	res.objectSouth = false;
 	res.objectWest = false;
 	res.objectEast = false;
 	res.objectDetected = false;
 
+	// get current x and y position from gazebo response
 	if (!bot_location.call(srv))
+	{
 		ROS_WARN("Failed to call ROS GetModelState service to get bot location");
+		return false;
+	}
 
+	// extract x and y from the response. Round as they are given as doubles, we want
+	// integers to index into the arrays
 	int x = std::round(srv.response.pose.position.x);
 	int y = std::round(srv.response.pose.position.y);
-
-	std::cout << "Hostile sensor called, x: " << x << " y: " << y << std::endl;
 	int range = req.sensorRange;
 
 	// Initialize radar arrays
@@ -183,7 +271,7 @@ bool hostileSensor(assignment_3::Sensor::Request &req, assignment_3::Sensor::Res
 	res.eastRadar = std::vector<int32_t>(range, 0);
 	res.westRadar = std::vector<int32_t>(range, 0);
 
-	// Check if there are bombs detected within the sensor range
+	// Check if there are hostiles detected within the sensor range
 	for (int i = 1; i <= range; ++i)
 	{
 		if (x - i >= 0 && currentGrid[x - i][y] == HOSTILE)
@@ -207,6 +295,8 @@ bool hostileSensor(assignment_3::Sensor::Request &req, assignment_3::Sensor::Res
 			res.eastRadar[i - 1] = 1;
 		}
 	}
+
+	// objectDetected provides easy api to check if anything was detected
 	if (res.objectNorth || res.objectEast || res.objectSouth || res.objectWest)
 		res.objectDetected = true;
 	return true;
@@ -214,20 +304,24 @@ bool hostileSensor(assignment_3::Sensor::Request &req, assignment_3::Sensor::Res
 
 bool survivorSensor(assignment_3::Sensor::Request &req, assignment_3::Sensor::Response &res)
 {
-	// set all to false
+	// initialise all to false
 	res.objectNorth = false;
 	res.objectSouth = false;
 	res.objectWest = false;
 	res.objectEast = false;
 	res.objectDetected = false;
 
+	// get current x and y position from gazebo response
 	if (!bot_location.call(srv))
+	{
 		ROS_WARN("Failed to call ROS GetModelState service to get bot location");
+		return false;
+	}
 
+	// extract x and y from the response. Round as they are given as doubles, we want
+	// integers to index into the arrays
 	int x = std::round(srv.response.pose.position.x);
 	int y = std::round(srv.response.pose.position.y);
-
-	std::cout << "Survivor sensor called, x: " << x << " y: " << y << std::endl;
 	int range = req.sensorRange;
 
 	// Initialize radar arrays
@@ -236,7 +330,7 @@ bool survivorSensor(assignment_3::Sensor::Request &req, assignment_3::Sensor::Re
 	res.eastRadar = std::vector<int32_t>(range, 0);
 	res.westRadar = std::vector<int32_t>(range, 0);
 
-	// Check if there are bombs detected within the sensor range
+	// Check if there are survivors detected within the sensor range
 	for (int i = 1; i <= range; ++i)
 	{
 		if (x - i >= 0 && currentGrid[x - i][y] == SURVIVOR)
@@ -260,39 +354,9 @@ bool survivorSensor(assignment_3::Sensor::Request &req, assignment_3::Sensor::Re
 			res.eastRadar[i - 1] = 1;
 		}
 	}
+
+	// objectDetected provides easy api to check if anything was detected
 	if (res.objectNorth || res.objectEast || res.objectSouth || res.objectWest)
 		res.objectDetected = true;
 	return true;
-}
-
-int main(int argc, char **argv)
-{
-	ros::init(argc, argv, "gazebo_object_manager");
-	ros::NodeHandle n;
-	bot_location = n.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
-	srv.request.model_name = "submarine";
-
-	// Initialize lastGrid to all O's
-	for (int i = 0; i < BOARD_H; ++i)
-		for (int j = 0; j < BOARD_W; ++j)
-			currentGrid[i][j] = EMPTY;
-
-	// Initialise coordinates
-	double spacing = 1.0;
-	for (int i = 0; i < BOARD_H; ++i)
-		for (int j = 0; j < BOARD_W; ++j)
-		{
-			coordinates[i][j].x = i * spacing;
-			coordinates[i][j].y = j * spacing;
-			coordinates[i][j].z = 0;
-		}
-	// initialise set model state service
-	setClient = n.serviceClient<gazebo_msgs::SetModelState>("gazebo/set_model_state");
-	spawnClient = n.serviceClient<gazebo_msgs::SpawnModel>("gazebo/spawn_sdf_model");
-	deleteClient = n.serviceClient<gazebo_msgs::DeleteModel>("gazebo/delete_model");
-	ros::ServiceServer HostileSenService = n.advertiseService("hostile_sensor", hostileSensor);
-	ros::ServiceServer SurvivorSenService = n.advertiseService("survivor_sensor", survivorSensor);
-	ros::ServiceServer updateGridService = n.advertiseService("update_grid", updateGrid);
-	ros::spin();
-	return 0;
 }
