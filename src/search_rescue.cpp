@@ -145,25 +145,27 @@ int main(int argc, char *argv[])
 				}
 			}
 			else
-			{ // still people left to be saved
+			{ 	
+				// still people left to be saved
 				ROS_INFO("We've run out of moves, but there's still people left to be saved!");
 				std::cout << "survivors seen: " << survivors_seen << " saved: " << survivors_saved << " onBoard: " << OnBoard << std::endl;
-				// we know where people are
+				// surivor locations known
 				if (survivors_seen > (survivors_saved + OnBoard))
 				{
 					// need a strategy to save those people
 					currentPath = COLLECT_SURVIVORS;
 					regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
 				}
-				else // we have no idea where the survivors are, need to explore
+				// unaware of survivor locations, need to explore
+				else
 				{
 					currentPath = SURVEY_AREA;
 					regenerate_moves(current_world, sub_x, sub_y, OnBoard, q, currentPath);
 				}
 			}
 		}
+		// retrieve next move
 		next_move = std::string(q.front());
-		// remove direction from queue
 		q.pop();
 		ROS_INFO("Next move is: %s", next_move.c_str());
 
