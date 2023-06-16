@@ -19,18 +19,23 @@
 ros::ServiceClient bot_location;
 gazebo_msgs::GetModelState srv;
 
+// current grid is always compared with new grid when updating gazebo to move/delete models
 int currentGrid[BOARD_H][BOARD_W];
 
+// 2D array of points used as an interface into the positioning system in gazebo
 geometry_msgs::Point coordinates[BOARD_H][BOARD_W];
 
+// global access to the spawn, delete, and set services
 ros::ServiceClient spawnClient;
 ros::ServiceClient deleteClient;
 ros::ServiceClient setClient;
-std::vector<std_msgs::String> lastGrid;
 
+// initialise number of spawned survivors and hostiles
 int numSurvivors = 0;
-int numObstacles = 0;
+int numHostiles = 0;
+// initialise check to see if submarine has already been spawned (its moved if already spawned)
 bool submarineSpawned = false;
+// home directory and model directory
 std::string homeDir = getenv("HOME");
 std::string modelDir = homeDir + "/.gazebo/models/";
 
@@ -65,8 +70,8 @@ gazebo_msgs::SpawnModel createSpawnRequest(int modelType, geometry_msgs::Point p
 	}
 	else if (modelType == HOSTILE)
 	{
-		spawn.request.model_name = "cardboard_box" + std::to_string(numObstacles); // box = hostile
-		numObstacles++;
+		spawn.request.model_name = "cardboard_box" + std::to_string(numHostiles); // box = hostile
+		numHostiles++;
 		modelPath = modelDir + "cardboard_box/model.sdf";
 	}
 	else if (modelType == SUB)
@@ -269,24 +274,18 @@ int main(int argc, char **argv)
 
 	// Initialize lastGrid to all O's
 	for (int i = 0; i < BOARD_H; ++i)
-	{
 		for (int j = 0; j < BOARD_W; ++j)
-		{
 			currentGrid[i][j] = EMPTY;
-		}
-	}
 
 	// Initialise coordinates
 	double spacing = 1.0;
 	for (int i = 0; i < BOARD_H; ++i)
-	{
 		for (int j = 0; j < BOARD_W; ++j)
 		{
 			coordinates[i][j].x = i * spacing;
 			coordinates[i][j].y = j * spacing;
 			coordinates[i][j].z = 0;
 		}
-	}
 	// initialise set model state service
 	setClient = n.serviceClient<gazebo_msgs::SetModelState>("gazebo/set_model_state");
 	spawnClient = n.serviceClient<gazebo_msgs::SpawnModel>("gazebo/spawn_sdf_model");
