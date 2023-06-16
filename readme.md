@@ -23,4 +23,4 @@ To successfully run this project on your own machine:
 
 5. Run the search_rescue node: `rosrun assignment_3 search_rescue` in a new terminal window. This is the main driver of the submarine which communicates with PAT and translates the provided moveset into actions. It maintains an internal representation of where the submarine has visited which is updated each time it detects a hostile or survivor (as informed by the hostile_sensor and survivor_sensor services).
 
-**Please note that the project depends on the direct path to the PAT installation. Currently, it is set to "/Desktop/MONO-PAT-v3.6.0/PAT3.Console.exe". If this path is incorrect, either relocate PAT to the expected path, or change PAT_EXE_DIR in the program to the correct path. This #define is located in search_rescue.cpp on line 29**
+**Please note that the project depends on the direct path to the PAT installation. Currently, it is set to `/Desktop/MONO-PAT-v3.6.0/PAT3.Console.exe`. If this path is incorrect, either relocate PAT to the expected path, or change `PAT_EXE_DIR` in the program to the correct path. This `#define` is located in `search_rescue.cpp` on line 29**
