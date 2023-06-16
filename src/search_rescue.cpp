@@ -629,6 +629,7 @@ void execute_move(int (&current_world)[BOARD_H][BOARD_W], int (&true_world)[BOAR
 
 std_msgs::Int32MultiArray createGrid(int (&true_world)[BOARD_H][BOARD_W])
 {
+	// used to convert from 1D array back to 2D array
 	std_msgs::Int32MultiArray true_grid;
 	true_grid.layout.dim.push_back(std_msgs::MultiArrayDimension());
 	true_grid.layout.dim.push_back(std_msgs::MultiArrayDimension());
