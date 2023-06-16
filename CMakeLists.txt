@@ -211,9 +211,9 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(updateGrid src/update_grid.cpp)
-target_link_libraries(updateGrid ${catkin_LIBRARIES})
-add_dependencies(updateGrid ${catkin_EXPORTED_TARGETS})
+add_executable(update_grid src/update_grid.cpp)
+target_link_libraries(update_grid ${catkin_LIBRARIES})
+add_dependencies(update_grid ${catkin_EXPORTED_TARGETS})
 
 add_executable(search_rescue src/search_rescue.cpp)
 target_link_libraries(search_rescue ${catkin_LIBRARIES})
