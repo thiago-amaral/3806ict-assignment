@@ -1,26 +1,27 @@
-# 3806ICT Assignment 3 by:
+# 3806ICT Assignment by:
 
--  Callam Hartley | s5113156
--  Daniel Jacobsen | s5262721
--  Todd Cooper | s2681289
--  James Hudson | s5182091
+-  Pitiputt Hanson
+-  Thiago Guerino Amaral
+-  Luke Edwards
+-  Satyam Sharma
 
-This project requires an Ubuntu environment with ROS, Gazebo, and PAT installed. It models a submarine as it explores its environment in a linear 2D fashion. The environment is resolved into a grid, where each position can contain a hostile entity, a survivor, or a marker to indicate whether it has been visited.
+This project requires an Ubuntu-based setup with ROS, Gazebo, PAT, and Ollama installed. It simulates an autonomous underwater vehicle (AUV) navigating a discretised 2D grid environment. Each grid cell may contain a survivor, a hostile entity, or a marker indicating whether it has been visited.
 
-Gazebo simulates the environment and provides a 3D representation in real-time. ROS drives the submarine's main control loop, which extracts a list of moves to achieve pre-defined goals from PAT. For example, PAT is called via the command line to achieve a goal, such as "return home", and returns a list of moves to a text file. ROS reads this text file and iteratively translates this moveset into a positioning system, using emulated sensors to react to its immediate surroundings.
+Gazebo provides real-time simulation of the environment, while ROS handles the AUV’s main control loop. The AUV uses Ollama to generate plans for high-level goals—such as "return home" and invokes PAT from the command line for path finding. PAT outputs a sequence of actions to a text file, which ROS then reads and executes step-by-step. The robot’s movement is guided by these plans, using simulated sensors to adapt to its surroundings during execution.
 
 To successfully run this project on your own machine:
 
-1. Clone this repository into the catkin workspace folder (under catkin_ws/src).
-2. Compile the binaries in catkin_ws/src using catkin_make.
-3. Launch the pre-set world which includes a birds-eye camera angle:
-   `roslaunch assignment_3 launch_world.launch`
-4. Run the update_grid node: `rosrun assignment_3 update_grid` in a new terminal window. This hosts three services used by the main submarine controller:
+Ensure Ollama is installed, llama2 is pulled down and Ollama's python library is installed. If not, run the following setup commands:
+1. sudo apt install ollama python3-pip
+2. ollama pull llama2
+3. pip install ollama 
 
-   -  hostile_sensor: Emulates a sensor (such as a sonar) to detect hostiles within a given grid-range
-   -  survivor_sensor: Emulates a sensor (such as infrared) to detect survivors within a given grid-range
-   -  update_grid: This facilitates the communication between the main submarine controller and update_grid. It allows for gazebo to continue simulating the submarine as it moves throughout the environment and picks up survivors.
+Then, to run the simulation:
+1. Clone this repository into the catkin workspace source folder (`catkin_ws/src`).
+2. Compile the code using catkin_make.
+3. Launch the world: `roslaunch assignment_3 launch_world.launch`
+4. Run the update_grid node: `rosrun assignment_3 update_grid` in a new terminal window.
+5. Run the planner_node: `rosrun assignment_3 planner_node.py` in a new terminal window.
+5. Run the search_rescue node: `rosrun assignment_3 search_rescue` in a new terminal window.
 
-5. Run the search_rescue node: `rosrun assignment_3 search_rescue` in a new terminal window. This is the main driver of the submarine which communicates with PAT and translates the provided moveset into actions. It maintains an internal representation of where the submarine has visited which is updated each time it detects a hostile or survivor (as informed by the hostile_sensor and survivor_sensor services).
-
-**Please note that the project depends on the direct path to the PAT installation. Currently, it is set to `/Desktop/MONO-PAT-v3.6.0/PAT3.Console.exe`. If this path is incorrect, either relocate PAT to the expected path, or change `PAT_EXE_DIR` in the program to the correct path. This `#define` is located in `search_rescue.cpp` on line 29**
+**Note: This project relies on a hardcoded path to the PAT installation. By default, it is set to `/Desktop/MONO-PAT-v3.6.0/PAT3.Console.exe`. If PAT is not located at this path, you will need to either move PAT to that location or update the PAT_EXE_DIR constant in the code. This `#define` can be found in `search_rescue.cpp` at line 29.**
