@@ -12,9 +12,9 @@ Gazebo provides real-time simulation of the environment, while ROS handles the A
 To successfully run this project on your own machine:
 
 Ensure Ollama is installed, llama2 is pulled down and Ollama's python library is installed. If not, run the following setup commands:
-1. sudo apt install ollama python3-pip
-2. ollama pull llama2
-3. pip install ollama 
+1. `sudo apt install ollama python3-pip`
+2. `ollama pull llama2`
+3. `pip install ollama`
 
 Then, to run the simulation:
 1. Clone this repository into the catkin workspace source folder (`catkin_ws/src`).
